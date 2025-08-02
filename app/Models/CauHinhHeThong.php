@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\Cache;
 
 class CauHinhHeThong extends Model
 {
-    protected $table = 'cauhinh_hethong';
+    protected $table = 'cau_hinh_dich_vu';
 
     protected $fillable = [
         'ma_cauhinh',

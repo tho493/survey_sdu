@@ -4,7 +4,7 @@
 
 @section('content')
     <div class="container-fluid">
-        <h1 class="h3 mb-4">Dashboard Quản trị</h1>
+        <h1 class="h3 mb-4">Chào mừng {{ Auth::user()->hoten }} đến với trang quản trị hệ thống khảo sát</h1>
 
         <!-- Stats Cards -->
         <div class="row">
@@ -91,25 +91,64 @@
 
         <div class="row">
             <!-- Biểu đồ phản hồi -->
-            <div class="col-xl-8 col-lg-7">
+            <div class="col-lg-8">
                 <div class="card shadow mb-4">
-                    <div class="card-header py-3">
-                        <h6 class="m-0 font-weight-bold text-primary">Phản hồi 7 ngày gần nhất</h6>
+                    <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                        <h6 class="m-0 font-weight-bold text-primary">Phản hồi hoàn thành trong 7 ngày qua</h6>
                     </div>
                     <div class="card-body">
-                        <canvas id="responseChart"></canvas>
+                        @if(isset($responseChart) && collect($responseChart['values'])->sum() > 0)
+                            <div class="chart-area" style="height: 320px;">
+                                <canvas id="responseChart"></canvas>
+                            </div>
+                        @else
+                            <div class="text-center py-5">
+                                <i class="bi bi-graph-up-arrow fs-1 text-muted"></i>
+                                <p class="text-muted mt-2">Không có phản hồi nào trong 7 ngày qua.</p>
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>
 
-            <!-- Thống kê theo đối tượng -->
-            <div class="col-xl-4 col-lg-5">
+            <!-- Thống kê phiếu theo đối tượng -->
+            <div class="col-lg-4">
                 <div class="card shadow mb-4">
                     <div class="card-header py-3">
-                        <h6 class="m-0 font-weight-bold text-primary">Thống kê theo đối tượng</h6>
+                        <h6 class="m-0 font-weight-bold text-primary">Thống kê phiếu theo đối tượng</h6>
                     </div>
                     <div class="card-body">
-                        <canvas id="objectChart"></canvas>
+                        @if(isset($objectStats) && $objectStats->sum('total_responses') > 0)
+                            <div class="chart-pie pt-4 pb-2" style="height: 250px;">
+                                <canvas id="objectChart"></canvas>
+                            </div>
+
+                            <div class="table-responsive mt-4">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>Đối tượng</th>
+                                            <th class="text-end">Số phiếu</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($objectStats as $item)
+                                            <tr>
+                                                <td>{{ $item->ten_doituong }}</td>
+                                                <td class="text-end">
+                                                    <strong>{{ number_format($item->total_responses) }}</strong>
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        @else
+                            <div class="text-center py-5">
+                                <i class="bi bi-bar-chart-line fs-1 text-muted"></i>
+                                <p class="text-muted mt-2">Chưa có dữ liệu phiếu hoàn thành để thống kê.</p>
+                            </div>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -204,7 +243,7 @@
                 labels: {!! json_encode($responseChart['labels']) !!},
                 datasets: [{
                     label: 'Số phản hồi',
-                    data: {!! json_encode($responseChart['data']) !!},
+                    data: {!! json_encode($responseChart['values']) !!},
                     borderColor: 'rgb(78, 115, 223)',
                     backgroundColor: 'rgba(78, 115, 223, 0.1)',
                     tension: 0.3
@@ -247,6 +286,20 @@
                 plugins: {
                     legend: {
                         position: 'bottom'
+                    }
+                }
+            },
+            tooltip: {
+                callbacks: {
+                    label: function (context) {
+                        let label = context.label || '';
+                        if (label) {
+                            label += ': ';
+                        }
+                        if (context.parsed !== null) {
+                            label += new Intl.NumberFormat('vi-VN').format(context.parsed) + ' phiếu';
+                        }
+                        return label;
                     }
                 }
             }

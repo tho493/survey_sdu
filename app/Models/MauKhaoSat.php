@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class MauKhaoSat extends Model
 {
+
     protected $table = 'mau_khaosat';
 
     protected $fillable = [

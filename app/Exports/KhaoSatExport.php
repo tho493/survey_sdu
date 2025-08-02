@@ -51,8 +51,11 @@ class KhaoSatExport
                         if (method_exists($cauHoiSheet, 'headings')) {
                             $sheet->appendRow($cauHoiSheet->headings());
                         }
-                        foreach ($cauHoiSheet->collection() as $row) {
-                            $sheet->appendRow((array) $row);
+                        $rows = $cauHoiSheet->collection();
+                        if (is_iterable($rows)) {
+                            foreach ($rows as $row) {
+                                $sheet->appendRow((array) $row);
+                            }
                         }
                     }
                 };

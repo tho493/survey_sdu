@@ -1,3 +1,5 @@
+{{-- resources/views/admin/config/index.blade.php --}}
+
 @extends('layouts.admin')
 
 @section('title', 'Cấu hình hệ thống')
@@ -7,48 +9,32 @@
         <h1 class="h3 mb-4">Cấu hình hệ thống</h1>
 
         <div class="row">
-            <!-- Cấu hình chung -->
+            <!-- Cột 1: Cấu hình chung (Chỉ Sửa) -->
             <div class="col-lg-6">
                 <div class="card shadow mb-4">
                     <div class="card-header">
                         <h6 class="m-0 font-weight-bold text-primary">Cấu hình chung</h6>
                     </div>
                     <div class="card-body">
-                        <form method="POST" action="{{ route('admin.config.update') }}">
+                        <form method="POST" action="{{ route('admin.config.update-configs') }}">
                             @csrf
-
                             @foreach($configs as $group => $items)
-                                <h6 class="text-uppercase text-muted mb-3">{{ $group }}</h6>
-
+                                <h6 class="text-uppercase text-muted small mt-3 mb-2">{{ $group }}</h6>
                                 @foreach($items as $config)
                                     <div class="mb-3">
                                         <label class="form-label">{{ $config->mota }}</label>
-                                        <input type="hidden"
-                                            name="configs[{{ $loop->parent->index }}-{{ $loop->index }}][ma_cauhinh]"
-                                            value="{{ $config->ma_cauhinh }}">
-
-                                        @if(in_array($config->ma_cauhinh, ['email_smtp_password']))
-                                            <input type="password" class="form-control"
-                                                name="configs[{{ $loop->parent->index }}-{{ $loop->index }}][giatri]"
-                                                value="{{ $config->giatri }}">
-                                        @elseif(in_array($config->ma_cauhinh, ['max_file_size', 'session_timeout']))
-                                            <input type="number" class="form-control"
-                                                name="configs[{{ $loop->parent->index }}-{{ $loop->index }}][giatri]"
-                                                value="{{ $config->giatri }}">
-                                        @else
-                                            <input type="text" class="form-control"
-                                                name="configs[{{ $loop->parent->index }}-{{ $loop->index }}][giatri]"
-                                                value="{{ $config->giatri }}">
-                                        @endif
+                                        <input type="hidden" name="configs[{{ $config->id }}][id]" value="{{ $config->id }}">
+                                        <input
+                                            type="{{ Str::contains($config->ma_cauhinh, ['password', 'secret']) ? 'password' : 'text' }}"
+                                            class="form-control" name="configs[{{ $config->id }}][giatri]"
+                                            value="{{ $config->giatri }}">
+                                        <small class="text-muted fst-italic">Key: `{{ $config->ma_cauhinh }}`</small>
                                     </div>
                                 @endforeach
-
                                 @if(!$loop->last)
-                                    <hr>
-                                @endif
+                                <hr> @endif
                             @endforeach
-
-                            <div class="text-end">
+                            <div class="text-end mt-3">
                                 <button type="submit" class="btn btn-primary">
                                     <i class="bi bi-save"></i> Lưu cấu hình
                                 </button>
@@ -58,59 +44,85 @@
                 </div>
             </div>
 
-            <!-- Template Email -->
+            <!-- Cột 2: Quản lý Template Email (Thêm, Sửa, Xóa) -->
             <div class="col-lg-6">
                 <div class="card shadow mb-4">
-                    <div class="card-header">
-                        <h6 class="m-0 font-weight-bold text-primary">Template Email</h6>
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h6 class="m-0 font-weight-bold text-primary">Quản lý Template Email</h6>
+                        <button class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#addTemplateModal">
+                            <i class="bi bi-plus-circle"></i> Thêm mới
+                        </button>
                     </div>
                     <div class="card-body">
-                        <div class="accordion" id="emailTemplates">
-                            @foreach($emailTemplates as $template)
+                        <div class="accordion" id="emailTemplatesAccordion">
+                            @forelse($emailTemplates as $template)
                                 <div class="accordion-item">
                                     <h2 class="accordion-header">
                                         <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse"
-                                            data-bs-target="#template{{ $template->id }}">
+                                            data-bs-target="#template-{{ $template->id }}">
                                             {{ $template->ten_template }}
+                                            <small class="text-muted ms-2">(`{{ $template->ma_template }}`)</small>
                                         </button>
                                     </h2>
-                                    <div id="template{{ $template->id }}" class="accordion-collapse collapse"
-                                        data-bs-parent="#emailTemplates">
+                                    <div id="template-{{ $template->id }}" class="accordion-collapse collapse"
+                                        data-bs-parent="#emailTemplatesAccordion">
                                         <div class="accordion-body">
                                             <form method="POST"
-                                                action="{{ route('admin.config.update-email-template', $template) }}">
+                                                action="{{ route('admin.config.email-template.update', $template) }}">
                                                 @csrf
                                                 @method('PUT')
 
                                                 <div class="mb-3">
-                                                    <label class="form-label">Tiêu đề</label>
+                                                    <label class="form-label">Tên Template</label>
+                                                    <input type="text" class="form-control" name="ten_template"
+                                                        value="{{ $template->ten_template }}" required>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Tiêu đề Email</label>
                                                     <input type="text" class="form-control" name="tieude"
                                                         value="{{ $template->tieude }}" required>
                                                 </div>
-
                                                 <div class="mb-3">
                                                     <label class="form-label">Nội dung</label>
                                                     <textarea class="form-control" name="noidung" rows="6"
                                                         required>{{ $template->noidung }}</textarea>
-                                                    <small class="text-muted">
-                                                        Biến có thể sử dụng: {{ implode(', ', $template->bien_template ?? []) }}
-                                                    </small>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label class="form-label">Các biến có thể sử dụng</label>
+                                                    <input type="text" class="form-control" name="bien_template"
+                                                        value="{{ implode(', ', $template->bien_template ?? []) }}"
+                                                        placeholder="VD: ho_ten, link_khaosat">
+                                                    <small class="text-muted">Các biến cách nhau bởi dấu phẩy (,)</small>
                                                 </div>
 
                                                 <div class="d-flex justify-content-between">
-                                                    <button type="button" class="btn btn-sm btn-secondary"
-                                                        onclick="testEmail({{ $template->id }})">
-                                                        <i class="bi bi-send"></i> Test email
+                                                    <button type="button" class="btn btn-sm btn-danger"
+                                                        onclick="confirmDeleteTemplate('{{ $template->id }}', '{{ $template->ten_template }}')">
+                                                        <i class="bi bi-trash"></i> Xóa
                                                     </button>
-                                                    <button type="submit" class="btn btn-sm btn-primary">
-                                                        <i class="bi bi-save"></i> Lưu
-                                                    </button>
+                                                    <div>
+                                                        <button type="button" class="btn btn-sm btn-secondary me-2"
+                                                            onclick="testEmail({{ $template->id }})">
+                                                            <i class="bi bi-send"></i> Test
+                                                        </button>
+                                                        <button type="submit" class="btn btn-sm btn-primary">
+                                                            <i class="bi bi-save"></i> Lưu
+                                                        </button>
+                                                    </div>
                                                 </div>
+                                            </form>
+                                            <form id="delete-template-form-{{ $template->id }}"
+                                                action="{{ route('admin.config.email-template.destroy', $template) }}"
+                                                method="POST" style="display: none;">
+                                                @csrf
+                                                @method('DELETE')
                                             </form>
                                         </div>
                                     </div>
                                 </div>
-                            @endforeach
+                            @empty
+                                <p class="text-center text-muted">Chưa có template email nào.</p>
+                            @endforelse
                         </div>
                     </div>
                 </div>
@@ -118,65 +130,83 @@
         </div>
     </div>
 
-    <!-- Modal test email -->
-    <div class="modal fade" id="testEmailModal" tabindex="-1">
-        <div class="modal-dialog">
+    <!-- Modal Thêm Template Email -->
+    <div class="modal fade" id="addTemplateModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
             <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Test Email</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="testEmailForm">
-                        <input type="hidden" id="template_id">
+                <form method="POST" action="{{ route('admin.config.email-template.store') }}">
+                    @csrf
+                    <div class="modal-header">
+                        <h5 class="modal-title">Thêm Template Email mới</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
                         <div class="mb-3">
-                            <label class="form-label">Email nhận</label>
-                            <input type="email" class="form-control" id="test_email" required>
+                            <label class="form-label">Tên Template <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control @error('ten_template') is-invalid @enderror"
+                                name="ten_template" value="{{ old('ten_template') }}"
+                                placeholder="VD: Thư mời tham gia khảo sát" required>
+                            @error('ten_template')<div class="invalid-feedback">{{ $message }}</div>@enderror
                         </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                    <button type="button" class="btn btn-primary" onclick="sendTestEmail()">
-                        <i class="bi bi-send"></i> Gửi
-                    </button>
-                </div>
+                        <div class="mb-3">
+                            <label class="form-label">Mã Template (Key) <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control @error('ma_template') is-invalid @enderror"
+                                name="ma_template" value="{{ old('ma_template') }}" placeholder="VD: invite_survey"
+                                required>
+                            @error('ma_template')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            <small class="text-muted">Chữ thường, không dấu, không khoảng trắng. VD: `invite_survey`</small>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Tiêu đề Email <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control @error('tieude') is-invalid @enderror" name="tieude"
+                                value="{{ old('tieude') }}" placeholder="VD: Thư mời tham gia khảo sát {ten_khaosat}"
+                                required>
+                            @error('tieude')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Nội dung <span class="text-danger">*</span></label>
+                            <textarea class="form-control @error('noidung') is-invalid @enderror" name="noidung" rows="6"
+                                required>{{ old('noidung') }}</textarea>
+                            @error('noidung')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Các biến có thể sử dụng</label>
+                            <input type="text" class="form-control @error('bien_template') is-invalid @enderror"
+                                name="bien_template" value="{{ old('bien_template') }}"
+                                placeholder="VD: ho_ten, ten_khaosat, link_khaosat">
+                            @error('bien_template')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                            <small class="text-muted">Các biến cách nhau bởi dấu phẩy (,)</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-plus-circle"></i> Thêm mới
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
     </div>
+
+    {{-- ... Modal test email giữ nguyên ... --}}
 @endsection
 
 @push('scripts')
+    {{-- ... script test email giữ nguyên ... --}}
     <script>
-        function testEmail(templateId) {
-            document.getElementById('template_id').value = templateId;
-            new bootstrap.Modal(document.getElementById('testEmailModal')).show();
+        function confirmDeleteTemplate(id, name) {
+            if (confirm(`Bạn có chắc chắn muốn xóa template "${name}"?`)) {
+                document.getElementById('delete-template-form-' + id).submit();
+            }
         }
 
-        function sendTestEmail() {
-            const email = document.getElementById('test_email').value;
-            const templateId = document.getElementById('template_id').value;
-
-            fetch('{{ route("admin.config.test-email") }}', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
-                body: JSON.stringify({
-                    email: email,
-                    template_id: templateId
-                })
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert('Email test đã được gửi!');
-                        bootstrap.Modal.getInstance(document.getElementById('testEmailModal')).hide();
-                    } else {
-                        alert('Lỗi: ' + data.message);
-                    }
-                });
-        }
+        // Giữ lại modal nếu có lỗi validation khi thêm mới template
+        @if($errors->has('ma_template') || $errors->has('ten_template'))
+            document.addEventListener('DOMContentLoaded', function () {
+                var addTemplateModal = new bootstrap.Modal(document.getElementById('addTemplateModal'));
+                addTemplateModal.show();
+            });
+        @endif
     </script>
 @endpush

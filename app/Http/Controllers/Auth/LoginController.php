@@ -11,7 +11,7 @@ class LoginController extends Controller
 {
     public function showLoginForm()
     {
-        return view('auth.login');
+        return view('admin.auth.login');
     }
 
     public function login(Request $request)
@@ -27,10 +27,14 @@ class LoginController extends Controller
             ->first();
 
         if ($user) {
+            // Lưu thời gian đăng nhập cuối cùng
+            $user->last_login = now();
+            $user->save();
+
             Auth::login($user);
             $request->session()->regenerate();
 
-            return redirect()->intended('dashboard');
+            return redirect()->intended('admin');
         }
 
         return back()->withErrors([

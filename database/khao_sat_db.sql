@@ -33,8 +33,8 @@ CREATE TABLE IF NOT EXISTS `taikhoan` (
   `sodienthoai` VARCHAR(20),
   -- `quyen` ENUM('admin', 'manager', 'viewer') DEFAULT 'viewer', -- Dành cho phân quyền
   `trangthai` TINYINT(1) DEFAULT 1,
-  `ngaytao` DATETIME DEFAULT CURRENT_TIMESTAMP,
-  `ngaysua` DATETIME ON UPDATE CURRENT_TIMESTAMP,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME ON UPDATE CURRENT_TIMESTAMP,
   `last_login` DATETIME,
   PRIMARY KEY (`id`),
   KEY `idx_tendangnhap` (`tendangnhap`),
@@ -61,39 +61,11 @@ CREATE TABLE IF NOT EXISTS `doituong_khaosat` (
   `mota` TEXT,
   `loai_doituong` ENUM('sinhvien', 'giangvien', 'nhanvien', 'doanhnghiep', 'khac') DEFAULT 'khac',
   `trangthai` TINYINT(1) DEFAULT 1,
-  `ngaytao` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_ma_doituong` (`ma_doituong`),
   KEY `idx_loai_doituong` (`loai_doituong`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Bảng đơn vị
-CREATE TABLE IF NOT EXISTS `donvi` (
-  `id` INT(11) NOT NULL AUTO_INCREMENT,
-  `ma_donvi` VARCHAR(20) NOT NULL UNIQUE,
-  `ten_donvi` VARCHAR(255) NOT NULL,
-  `donvi_cha_id` INT(11),
-  `loai_donvi` ENUM('khoa', 'phong', 'trung_tam', 'ban', 'khac') DEFAULT 'khac',
-  `trangthai` TINYINT(1) DEFAULT 1,
-  PRIMARY KEY (`id`),
-  KEY `idx_ma_donvi` (`ma_donvi`),
-  KEY `idx_donvi_cha` (`donvi_cha_id`),
-  CONSTRAINT `fk_donvi_cha` FOREIGN KEY (`donvi_cha_id`) 
-    REFERENCES `donvi` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Bảng chương trình đào tạo
-CREATE TABLE IF NOT EXISTS `chuongtrinh_daotao` (
-  `id` INT(11) NOT NULL AUTO_INCREMENT,
-  `ma_ctdt` VARCHAR(20) NOT NULL UNIQUE,
-  `ten_ctdt` VARCHAR(255) NOT NULL,
-  `khoa_id` INT(11),
-  `trangthai` TINYINT(1) DEFAULT 1,
-  PRIMARY KEY (`id`),
-  KEY `idx_ma_ctdt` (`ma_ctdt`),
-  KEY `idx_khoa` (`khoa_id`),
-  CONSTRAINT `fk_ctdt_khoa` FOREIGN KEY (`khoa_id`) 
-    REFERENCES `donvi` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Bảng năm học
@@ -118,8 +90,8 @@ CREATE TABLE IF NOT EXISTS `mau_khaosat` (
   `version` INT DEFAULT 1,
   `trangthai` ENUM('draft', 'active', 'inactive') DEFAULT 'draft',
   `nguoi_tao_id` INT(11),
-  `ngaytao` DATETIME DEFAULT CURRENT_TIMESTAMP,
-  `ngaysua` DATETIME ON UPDATE CURRENT_TIMESTAMP,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_ma_doituong` (`ma_doituong`),
   KEY `idx_trangthai` (`trangthai`),
@@ -191,7 +163,7 @@ CREATE TABLE IF NOT EXISTS `dot_khaosat` (
   `trangthai` ENUM('draft', 'active', 'closed') DEFAULT 'draft',
   `mota` TEXT,
   `nguoi_tao_id` INT(11),
-  `ngaytao` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_mau_khaosat` (`mau_khaosat_id`),
   KEY `idx_namhoc` (`namhoc_id`),
@@ -288,10 +260,10 @@ CREATE TABLE IF NOT EXISTS `thongbao` (
   `doi_tuong` VARCHAR(50), -- all, sinhvien, giangvien, nhanvien
   `dot_khaosat_id` INT(11),
   `trangthai` TINYINT(1) DEFAULT 1,
-  `ngaytao` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   `ngay_hethan` DATETIME,
   PRIMARY KEY (`id`),
-  KEY `idx_trangthai_ngay` (`trangthai`, `ngaytao`, `ngay_hethan`),
+  KEY `idx_trangthai_ngay` (`trangthai`, `created_at`, `ngay_hethan`),
   KEY `idx_dot_khaosat` (`dot_khaosat_id`),
   CONSTRAINT `fk_thongbao_dot` FOREIGN KEY (`dot_khaosat_id`) 
     REFERENCES `dot_khaosat` (`id`) ON DELETE CASCADE
@@ -465,33 +437,13 @@ DELIMITER ;
 
 DELIMITER //
 
--- Procedure lấy thống kê khảo sát theo đơn vị
-CREATE PROCEDURE sp_ThongKeTheoDonVi(
-  IN p_dot_khaosat_id INT
-)
-BEGIN
-  SELECT 
-    JSON_UNQUOTE(JSON_EXTRACT(pk.metadata, '$.donvi')) AS donvi,
-    COUNT(*) AS tong_phieu,
-    COUNT(CASE WHEN pk.trangthai = 'completed' THEN 1 END) AS phieu_hoanthanh,
-    ROUND(COUNT(CASE WHEN pk.trangthai = 'completed' THEN 1 END) * 100.0 / COUNT(*), 2) AS ty_le
-  FROM phieu_khaosat pk
-  WHERE pk.dot_khaosat_id = p_dot_khaosat_id
-  GROUP BY JSON_UNQUOTE(JSON_EXTRACT(pk.metadata, '$.donvi'))
-  ORDER BY tong_phieu DESC;
-END//
-
-DELIMITER ;
-
-DELIMITER //
-
--- Procedure xuất kết quả khảo sát
+-- Procedure xuất kết quả khảo sát (MySQL syntax)
 CREATE PROCEDURE sp_XuatKetQuaKhaoSat(
   IN p_dot_khaosat_id INT,
-  IN p_cauhoi_id INT DEFAULT NULL
+  IN p_cauhoi_id INT
 )
 BEGIN
-  IF p_cauhoi_id IS NULL THEN
+  IF p_cauhoi_id IS NULL OR p_cauhoi_id = 0 THEN
     -- Xuất tất cả câu hỏi
     SELECT 
       ch.id AS cauhoi_id,
@@ -500,14 +452,15 @@ BEGIN
       pt.noidung AS phuongan,
       COUNT(pc.id) AS so_luong,
       ROUND(COUNT(pc.id) * 100.0 / 
-            (SELECT COUNT(DISTINCT phieu_khaosat_id) 
+            (SELECT COUNT(DISTINCT pc2.phieu_khaosat_id) 
              FROM phieu_khaosat_chitiet pc2 
-             WHERE pc2.cauhoi_id = ch.id), 2) AS ty_le
+             INNER JOIN phieu_khaosat pk2 ON pc2.phieu_khaosat_id = pk2.id
+             WHERE pc2.cauhoi_id = ch.id AND pk2.dot_khaosat_id = p_dot_khaosat_id), 2) AS ty_le
     FROM cauhoi_khaosat ch
     LEFT JOIN phuongan_traloi pt ON ch.id = pt.cauhoi_id
     LEFT JOIN phieu_khaosat_chitiet pc ON pt.id = pc.phuongan_id
     LEFT JOIN phieu_khaosat pk ON pc.phieu_khaosat_id = pk.id
-    WHERE pk.dot_khaosat_id = p_dot_khaosat_id
+    WHERE pk.dot_khaosat_id = p_dot_khaosat_id OR pk.dot_khaosat_id IS NULL
     GROUP BY ch.id, pt.id
     ORDER BY ch.thutu, pt.thutu;
   ELSE
@@ -515,14 +468,15 @@ BEGIN
       pt.noidung AS phuongan,
       COUNT(pc.id) AS so_luong,
       ROUND(COUNT(pc.id) * 100.0 / 
-            (SELECT COUNT(DISTINCT phieu_khaosat_id) 
-             FROM phieu_khaosat_chitiet 
-             WHERE cauhoi_id = p_cauhoi_id), 2) AS ty_le
+            (SELECT COUNT(DISTINCT pc2.phieu_khaosat_id) 
+             FROM phieu_khaosat_chitiet pc2
+             INNER JOIN phieu_khaosat pk2 ON pc2.phieu_khaosat_id = pk2.id
+             WHERE pc2.cauhoi_id = p_cauhoi_id AND pk2.dot_khaosat_id = p_dot_khaosat_id), 2) AS ty_le
     FROM phuongan_traloi pt
     LEFT JOIN phieu_khaosat_chitiet pc ON pt.id = pc.phuongan_id
     LEFT JOIN phieu_khaosat pk ON pc.phieu_khaosat_id = pk.id
     WHERE pt.cauhoi_id = p_cauhoi_id 
-      AND pk.dot_khaosat_id = p_dot_khaosat_id
+      AND (pk.dot_khaosat_id = p_dot_khaosat_id OR pk.dot_khaosat_id IS NULL)
     GROUP BY pt.id
     ORDER BY pt.thutu;
   END IF;
@@ -679,10 +633,8 @@ DELIMITER ;
 -- --------------------------------------------------------
 
 -- Thêm tài khoản admin mặc định
-INSERT INTO `taikhoan` (`tendangnhap`, `matkhau`, `hoten`, `email`, `quyen`) VALUES
-('admin', '$2y$10$YourHashedPasswordHere', 'Administrator', 'admin@example.com', 'admin'),
-('manager', '$2y$10$YourHashedPasswordHere', 'Quản lý khảo sát', 'manager@example.com', 'manager'),
-('viewer', '$2y$10$YourHashedPasswordHere', 'Người xem', 'viewer@example.com', 'viewer');
+INSERT INTO `taikhoan` (`tendangnhap`, `matkhau`, `hoten`, `email`) VALUES
+('tho493', '2584fcf4f93b79886a1bba3c47dc5cac', 'Administrator', 'tho493@admin.com'),
 
 -- Thêm đối tượng khảo sát mẫu
 INSERT INTO `doituong_khaosat` (`ma_doituong`, `ten_doituong`, `mota`, `loai_doituong`) VALUES
@@ -692,14 +644,6 @@ INSERT INTO `doituong_khaosat` (`ma_doituong`, `ten_doituong`, `mota`, `loai_doi
 ('DN', 'Doanh nghiệp', 'Khảo sát dành cho doanh nghiệp', 'doanhnghiep'),
 ('SVTN', 'Sinh viên tốt nghiệp', 'Khảo sát sinh viên sau tốt nghiệp', 'sinhvien');
 
--- Thêm đơn vị mẫu
-INSERT INTO `donvi` (`ma_donvi`, `ten_donvi`, `loai_donvi`) VALUES
-('CNTT', 'Khoa Công nghệ thông tin', 'khoa'),
-('KT', 'Khoa Kinh tế', 'khoa'),
-('CK', 'Khoa Cơ khí', 'khoa'),
-('DT', 'Phòng Đào tạo', 'phong'),
-('CTSV', 'Phòng Công tác sinh viên', 'phong');
-
 -- Thêm năm học
 INSERT INTO `namhoc` (`namhoc`) VALUES
 ('2023-2024'),
@@ -707,12 +651,35 @@ INSERT INTO `namhoc` (`namhoc`) VALUES
 ('2025-2026');
 
 -- Thêm cấu hình hệ thống
-INSERT INTO `cau_hinh_dich_vu` (`ten_cauhinh`, `giatri`, `mota`, `nhom_cauhinh`) VALUES
+INSERT INTO `cau_hinh_dich_vu` (`ma_cauhinh`, `giatri`, `mota`, `nhom_cauhinh`) VALUES
+
+-- Cấu hình email mặc định
 ('email_smtp_host', 'smtp.gmail.com', 'SMTP Host', 'email'),
 ('email_smtp_port', '587', 'SMTP Port', 'email'),
+('email_smtp_encryption', 'tls', 'SMTP Encryption (tls/ssl)', 'email'),
+('email_smtp_username', 'test@gmail.com', 'SMTP Username', 'email'),
+('email_smtp_password', '123456', 'SMTP Password/App Password', 'email'),
+('email_from_address', 'noreply@test.com', 'Địa chỉ email gửi đi mặc định', 'email'),
+('email_from_name', 'Hệ thống Khảo sát', 'Tên người gửi mặc định', 'email'),
+('email_reply_to', 'support@test.com', 'Địa chỉ email nhận phản hồi', 'email'),
+
+-- Cấu hình giới hạn gửi
+('email_max_attempts', '3', 'Số lần thử gửi lại tối đa', 'email'),
+('email_queue_timeout', '300', 'Thời gian timeout của queue gửi mail (giây)', 'email'),
+('email_batch_size', '50', 'Số email tối đa gửi trong 1 batch', 'email'),
+('email_rate_limit', '100', 'Số email tối đa gửi trong 1 giờ', 'email'),
+
+-- Cấu hình thông báo
+('email_notify_error', '1', 'Gửi thông báo khi có lỗi', 'email'),
+('email_error_notify_to', 'admin@test.com', 'Email nhận thông báo lỗi', 'email'),
+('email_test_mode', '0', 'Chế độ test email (1: bật, 0: tắt)', 'email'),
+('email_test_recipient', 'test@test.com', 'Email nhận khi ở chế độ test', 'email');
+
+-- Config app
 ('system_name', 'Hệ thống khảo sát nội bộ', 'Hệ thống khảo sát nội bộ của trường Đại học Sao Đỏ', 'general'),
 ('max_file_size', '10485760', 'Dung lượng file tối đa (bytes)', 'upload'),
 ('session_timeout', '3600', 'Thời gian timeout phiên (giây)', 'security');
+
 
 -- Thêm template email mẫu
 INSERT INTO `template_email` (`ma_template`, `ten_template`, `tieude`, `noidung`, `bien_template`) VALUES
@@ -728,24 +695,9 @@ INSERT INTO `template_email` (`ma_template`, `ten_template`, `tieude`, `noidung`
 -- --------------------------------------------------------
 
 -- Index cho tìm kiếm và thống kê
-CREATE INDEX idx_phieu_metadata_donvi ON phieu_khaosat((CAST(JSON_EXTRACT(metadata, '$.donvi') AS CHAR(50))));
 CREATE INDEX idx_phieu_metadata_khoa ON phieu_khaosat((CAST(JSON_EXTRACT(metadata, '$.khoa') AS CHAR(50))));
 CREATE INDEX idx_lichsu_thoigian_bang ON lichsu_thaydoi(thoigian, bang_thaydoi);
 CREATE INDEX idx_chitiet_composite ON phieu_khaosat_chitiet(phieu_khaosat_id, cauhoi_id, phuongan_id);
-
--- --------------------------------------------------------
--- PARTITION CHO BẢNG LỚN
--- --------------------------------------------------------
-
--- Partition cho bảng phieu_khaosat_chitiet theo năm
-ALTER TABLE phieu_khaosat_chitiet 
-PARTITION BY RANGE (YEAR(thoigian)) (
-  PARTITION p2023 VALUES LESS THAN (2024),
-  PARTITION p2024 VALUES LESS THAN (2025),
-  PARTITION p2025 VALUES LESS THAN (2026),
-  PARTITION p2026 VALUES LESS THAN (2027),
-  PARTITION p_future VALUES LESS THAN MAXVALUE
-);
 
 -- --------------------------------------------------------
 -- EVENT TỰ ĐỘNG

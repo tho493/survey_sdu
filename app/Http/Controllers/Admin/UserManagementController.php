@@ -4,13 +4,13 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use App\Models\PhanQuyen;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\DB;
 
 class UserManagementController extends Controller
 {
+    /**
+     * Danh sách users
+     */
     public function index(Request $request)
     {
         $query = User::query();
@@ -23,146 +23,123 @@ class UserManagementController extends Controller
             });
         }
 
-        if ($request->filled('quyen')) {
-            $query->where('quyen', $request->quyen);
-        }
-
-        if ($request->filled('trangthai')) {
-            $query->where('trangthai', $request->trangthai);
-        }
-
-        $users = $query->orderBy('created_at', 'desc')->paginate(10);
+        $users = $query->orderBy('tendangnhap')->paginate(10);
 
         return view('admin.users.index', compact('users'));
     }
 
+    /**
+     * Form tạo user mới
+     */
     public function create()
     {
-        $permissions = $this->getPermissionList();
-        return view('admin.users.create', compact('permissions'));
+        return view('admin.users.create');
     }
 
+    /**
+     * Lưu user mới
+     */
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'tendangnhap' => 'required|unique:taikhoan|max:50',
+            'tendangnhap' => 'required|unique:taikhoan,tendangnhap|max:50|regex:/^[a-zA-Z0-9_]+$/',
             'matkhau' => 'required|min:6',
-            'hoten' => 'required|max:100',
-            'email' => 'nullable|email|unique:taikhoan',
-            'sodienthoai' => 'nullable|max:20',
-            'quyen' => 'required|in:admin,manager,viewer',
-            'permissions' => 'array'
+            'hoten' => 'required|max:50'
+        ], [
+            'tendangnhap.required' => 'Vui lòng nhập tên đăng nhập',
+            'tendangnhap.unique' => 'Tên đăng nhập đã tồn tại',
+            'tendangnhap.regex' => 'Tên đăng nhập chỉ được chứa chữ cái, số và dấu gạch dưới',
+            'matkhau.required' => 'Vui lòng nhập mật khẩu',
+            'matkhau.min' => 'Mật khẩu phải có ít nhất 6 ký tự',
+            'hoten.required' => 'Vui lòng nhập họ tên'
         ]);
 
-        DB::beginTransaction();
         try {
-            $user = User::create([
+            User::create([
                 'tendangnhap' => $validated['tendangnhap'],
-                'matkhau' => Hash::make($validated['matkhau']),
-                'hoten' => $validated['hoten'],
-                'email' => $validated['email'],
-                'sodienthoai' => $validated['sodienthoai'],
-                'quyen' => $validated['quyen']
+                'matkhau' => md5($validated['matkhau']),
+                'hoten' => $validated['hoten']
             ]);
 
-            // Phân quyền chi tiết
-            if (isset($validated['permissions']) && $validated['quyen'] !== 'admin') {
-                foreach ($validated['permissions'] as $chucnang => $quyen) {
-                    PhanQuyen::create([
-                        'taikhoan_id' => $user->id,
-                        'chucnang' => $chucnang,
-                        'quyen' => $quyen
-                    ]);
-                }
-            }
-
-            DB::commit();
             return redirect()->route('admin.users.index')
                 ->with('success', 'Tạo tài khoản thành công');
 
         } catch (\Exception $e) {
-            DB::rollback();
-            return back()->with('error', 'Có lỗi xảy ra: ' . $e->getMessage());
+            return back()->with('error', 'Có lỗi xảy ra: ' . $e->getMessage())
+                ->withInput();
         }
     }
 
-    public function edit(User $user)
+    /**
+     * Form sửa user
+     */
+    public function edit($tendangnhap)
     {
-        $permissions = $this->getPermissionList();
-        $userPermissions = $user->phanQuyen->pluck('quyen', 'chucnang')->toArray();
-
-        return view('admin.users.edit', compact('user', 'permissions', 'userPermissions'));
+        $user = User::findOrFail($tendangnhap);
+        return view('admin.users.edit', compact('user'));
     }
 
-    public function update(Request $request, User $user)
+
+    /**
+     * Cập nhật user
+     */
+    public function update(Request $request, $tendangnhap)
     {
+        $user = User::findOrFail($tendangnhap);
+
         $validated = $request->validate([
-            'hoten' => 'required|max:100',
-            'email' => 'nullable|email|unique:taikhoan,email,' . $user->id,
-            'sodienthoai' => 'nullable|max:20',
-            'quyen' => 'required|in:admin,manager,viewer',
-            'trangthai' => 'boolean',
+            'hoten' => 'required|max:50',
             'matkhau' => 'nullable|min:6',
-            'permissions' => 'array'
+            'email' => 'nullable|email|max:100',
+            'sodienthoai' => 'nullable|regex:/^[0-9]{9,15}$/',
+            'trangthai' => 'required|in:1,0'
+        ], [
+            'hoten.required' => 'Vui lòng nhập họ tên',
+            'matkhau.min' => 'Mật khẩu phải có ít nhất 6 ký tự',
+            'email.email' => 'Email không hợp lệ',
+            'sodienthoai.regex' => 'Số điện thoại không hợp lệ',
+            'trangthai.required' => 'Vui lòng chọn trạng thái',
+            'trangthai.in' => 'Trạng thái không hợp lệ'
         ]);
 
-        DB::beginTransaction();
         try {
-            $updateData = [
-                'hoten' => $validated['hoten'],
-                'email' => $validated['email'],
-                'sodienthoai' => $validated['sodienthoai'],
-                'quyen' => $validated['quyen'],
-                'trangthai' => $validated['trangthai'] ?? 1
-            ];
+            $user->hoten = $validated['hoten'];
+            $user->email = $validated['email'] ?? null;
+            $user->sodienthoai = $validated['sodienthoai'] ?? null;
+            $user->trangthai = $validated['trangthai'];
 
             if (!empty($validated['matkhau'])) {
-                $updateData['matkhau'] = Hash::make($validated['matkhau']);
+                $user->matkhau = md5($validated['matkhau']);
             }
 
-            $user->update($updateData);
+            $user->save();
 
-            // Cập nhật phân quyền
-            $user->phanQuyen()->delete();
-            if (isset($validated['permissions']) && $validated['quyen'] !== 'admin') {
-                foreach ($validated['permissions'] as $chucnang => $quyen) {
-                    PhanQuyen::create([
-                        'taikhoan_id' => $user->id,
-                        'chucnang' => $chucnang,
-                        'quyen' => $quyen
-                    ]);
-                }
-            }
-
-            DB::commit();
             return redirect()->route('admin.users.index')
                 ->with('success', 'Cập nhật tài khoản thành công');
 
         } catch (\Exception $e) {
-            DB::rollback();
             return back()->with('error', 'Có lỗi xảy ra: ' . $e->getMessage());
         }
     }
 
-    public function destroy(User $user)
+    /**
+     * Xóa user
+     */
+    public function destroy($tendangnhap)
     {
-        if ($user->id === auth()->id()) {
+        $user = User::findOrFail($tendangnhap);
+
+        // Không cho phép xóa chính mình
+        if ($user->tendangnhap === auth()->user()->tendangnhap) {
             return back()->with('error', 'Không thể xóa tài khoản của chính mình');
         }
 
-        $user->delete();
-        return redirect()->route('admin.users.index')
-            ->with('success', 'Xóa tài khoản thành công');
-    }
-
-    private function getPermissionList()
-    {
-        return [
-            'mau_khaosat' => 'Mẫu khảo sát',
-            'dot_khaosat' => 'Đợt khảo sát',
-            'bao_cao' => 'Báo cáo',
-            'doi_tuong' => 'Đối tượng khảo sát',
-            'cau_hinh' => 'Cấu hình hệ thống'
-        ];
+        try {
+            $user->delete();
+            return redirect()->route('admin.users.index')
+                ->with('success', 'Xóa tài khoản thành công');
+        } catch (\Exception $e) {
+            return back()->with('error', 'Có lỗi xảy ra: ' . $e->getMessage());
+        }
     }
 }

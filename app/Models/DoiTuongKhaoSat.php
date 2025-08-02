@@ -12,7 +12,6 @@ class DoiTuongKhaoSat extends Model
         'ma_doituong',
         'ten_doituong',
         'mota',
-        'loai_doituong',
         'trangthai'
     ];
 

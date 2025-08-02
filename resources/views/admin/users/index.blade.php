@@ -20,14 +20,6 @@
                             value="{{ request('search') }}">
                     </div>
                     <div class="col-md-3">
-                        <select class="form-select" name="quyen">
-                            <option value="">-- Tất cả quyền --</option>
-                            <option value="admin" {{ request('quyen') == 'admin' ? 'selected' : '' }}>Admin</option>
-                            <option value="manager" {{ request('quyen') == 'manager' ? 'selected' : '' }}>Manager</option>
-                            <option value="viewer" {{ request('quyen') == 'viewer' ? 'selected' : '' }}>Viewer</option>
-                        </select>
-                    </div>
-                    <div class="col-md-3">
                         <select class="form-select" name="trangthai">
                             <option value="">-- Tất cả trạng thái --</option>
                             <option value="1" {{ request('trangthai') == '1' ? 'selected' : '' }}>Hoạt động</option>
@@ -54,7 +46,7 @@
                                 <th>Tên đăng nhập</th>
                                 <th>Họ tên</th>
                                 <th>Email</th>
-                                <th>Quyền</th>
+                                <th>Số điện thoại</th>
                                 <th>Trạng thái</th>
                                 <th>Đăng nhập cuối</th>
                                 <th>Thao tác</th>
@@ -66,13 +58,8 @@
                                     <td>{{ $user->id }}</td>
                                     <td>{{ $user->tendangnhap }}</td>
                                     <td>{{ $user->hoten }}</td>
-                                    <td>{{ $user->email }}</td>
-                                    <td>
-                                        <span
-                                            class="badge bg-{{ $user->quyen == 'admin' ? 'danger' : ($user->quyen == 'manager' ? 'warning' : 'info') }}">
-                                            {{ ucfirst($user->quyen) }}
-                                        </span>
-                                    </td>
+                                    <td>{{ $user->email ?? 'Không có' }}</td>
+                                    <td>{{ $user->sodienthoai ?? 'Không có' }}</td>
                                     <td>
                                         <span class="badge bg-{{ $user->trangthai ? 'success' : 'secondary' }}">
                                             {{ $user->trangthai ? 'Hoạt động' : 'Khóa' }}

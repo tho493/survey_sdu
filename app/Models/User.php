@@ -11,15 +11,12 @@ class User extends Authenticatable
     use HasFactory, Notifiable;
 
     protected $table = 'taikhoan';
-    protected $primaryKey = 'tendangnhap';
-    public $incrementing = false;
-    protected $keyType = 'string';
 
     protected $fillable = [
+        'id',
         'tendangnhap',
         'matkhau',
-        'hoten',
-        'quyen'
+        'hoten'
     ];
 
     protected $hidden = ['matkhau'];

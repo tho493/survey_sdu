@@ -37,6 +37,11 @@ class DotKhaoSat extends Model
         return $this->hasMany(PhieuKhaoSat::class, 'dot_khaosat_id');
     }
 
+    public function nguoiTao()
+    {
+        return $this->belongsTo(User::class, 'nguoi_tao_id', 'tendangnhap');
+    }
+
     public function isActive()
     {
         return $this->trangthai === 'active'

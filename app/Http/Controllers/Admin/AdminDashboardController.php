@@ -9,6 +9,7 @@ use App\Models\PhieuKhaoSat;
 use App\Models\MauKhaoSat;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
 
 class AdminDashboardController extends Controller
 {
@@ -18,7 +19,7 @@ class AdminDashboardController extends Controller
         $stats = [
             'total_users' => User::count(),
             'active_surveys' => DotKhaoSat::where('trangthai', 'active')->count(),
-            'total_responses' => PhieuKhaoSat::whereMonth('created_at', date('m'))->count(),
+            'total_responses' => PhieuKhaoSat::whereMonth('thoigian_batdau', date('m'))->count(),
             'total_templates' => MauKhaoSat::where('trangthai', 'active')->count(),
         ];
 
@@ -37,7 +38,7 @@ class AdminDashboardController extends Controller
             ->take(5)
             ->get();
 
-        return view('admin.dashboard', compact(
+        return view('admin.dashboard.index', compact(
             'stats',
             'responseChart',
             'recentActivities',
@@ -48,19 +49,26 @@ class AdminDashboardController extends Controller
 
     private function getResponseChart()
     {
-        $dates = collect();
-        for ($i = 6; $i >= 0; $i--) {
-            $dates->push(Carbon::now()->subDays($i)->format('Y-m-d'));
-        }
-
-        $data = PhieuKhaoSat::selectRaw('DATE(created_at) as date, COUNT(*) as count')
-            ->whereDate('created_at', '>=', Carbon::now()->subDays(7))
+        $data = PhieuKhaoSat::selectRaw('DATE(thoigian_batdau) as date, COUNT(*) as count')
+            ->whereDate('thoigian_batdau', '>=', Carbon::now()->subDays(7))
             ->groupBy('date')
             ->pluck('count', 'date');
 
+        $labels = [];
+        $valuesCollection = collect();
+
+        for ($i = 6; $i >= 0; $i--) {
+            $date = Carbon::now()->subDays($i);
+            $dateString = $date->toDateString();
+
+            $labels[] = $date->format('d/m');
+
+            $valuesCollection->push($data->get($dateString, 0));
+        }
+
         return [
-            'labels' => $dates->map(fn($date) => Carbon::parse($date)->format('d/m')),
-            'data' => $dates->map(fn($date) => $data->get($date, 0))
+            'labels' => $labels,
+            'values' => $valuesCollection->all()
         ];
     }
 
@@ -85,11 +93,10 @@ class AdminDashboardController extends Controller
             ->leftJoin('phieu_khaosat as pk', 'dk.id', '=', 'pk.dot_khaosat_id')
             ->select(
                 'dt.ten_doituong',
-                'dt.loai_doituong',
                 DB::raw('COUNT(DISTINCT dk.id) as total_surveys'),
                 DB::raw('COUNT(pk.id) as total_responses')
             )
-            ->groupBy('dt.ma_doituong', 'dt.ten_doituong', 'dt.loai_doituong')
+            ->groupBy('dt.ma_doituong', 'dt.ten_doituong')
             ->get();
     }
 }
