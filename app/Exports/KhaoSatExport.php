@@ -39,7 +39,7 @@ class KhaoSatExport implements FromCollection, WithHeadings, WithMapping, Should
     /**
      * @return \Illuminate\Support\Collection // WITH ERROR
      */
-    public function collection(): \App\Models\PhieuKhaoSat
+    public function collection()
     {
         // Trả về collection các phiếu khảo sát đã hoàn thành
         return $this->dotKhaoSat->phieuKhaoSat;

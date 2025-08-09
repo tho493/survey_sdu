@@ -59,6 +59,24 @@
                                     <label class="block font-medium mb-1">Email</label>
                                     <input type="email" class="form-input w-full border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" name="metadata[email]">
                                 </div>
+                                <input type="hidden" name="metadata[thoigian_batdau]" id="thoigian_batdau">
+                                <script>
+                                    document.addEventListener('DOMContentLoaded', function() {
+                                        // Set current datetime in ISO format for datetime-local (without seconds)
+                                        function getCurrentLocalDateTime() {
+                                            const now = new Date();
+                                            const year = now.getFullYear();
+                                            const month = String(now.getMonth() + 1).padStart(2, '0');
+                                            const day = String(now.getDate()).padStart(2, '0');
+                                            const hours = String(now.getHours()).padStart(2, '0');
+                                            const minutes = String(now.getMinutes()).padStart(2, '0');
+                                            const seconds = String(now.getSeconds()).padStart(2, '0');
+                                            return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+                                        }
+                                        
+                                        document.getElementById('thoigian_batdau').value = getCurrentLocalDateTime();
+                                    });
+                                </script>
                             </div>
                         </div>
                     </div>
@@ -182,6 +200,10 @@
                         @endforeach
                     @endif
 
+                    <div class="mb-4 flex justify-center">
+                        <div class="g-recaptcha" data-sitekey="{{ env('RECAPTCHA_SITE_KEY') }}"></div>
+                    </div>
+
                     <!-- Submit button -->
                     <div class="flex justify-center my-8 gap-4">
                         <button type="button" class="inline-flex items-center px-6 py-3 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition" onclick="history.back()">
@@ -197,6 +219,30 @@
             <!-- Sidebar Progress -->
             <div class="w-full lg:w-1/3">
                 <div class="progress-section">
+                    <div class="bg-white shadow rounded-lg mb-4">
+                        <div class="p-6 flex flex-col items-center">
+                            <h6 class="font-semibold mb-4">Thời gian làm khảo sát</h6>
+                            <div class="text-3xl font-mono text-blue-600" id="timerDisplay">00:00</div>
+                            <small class="text-gray-500 mt-2">Thời gian sẽ được tính từ khi bạn mở khảo sát này.</small>
+                        </div>
+                    </div>
+                    <script>
+                        // Simple timer
+                        let secondsElapsed = 0;
+                        function pad(n) { return n < 10 ? '0' + n : n; }
+                        function updateTimerDisplay() {
+                            const minutes = Math.floor(secondsElapsed / 60);
+                            const seconds = secondsElapsed % 60;
+                            document.getElementById('timerDisplay').textContent = pad(minutes) + ':' + pad(seconds);
+                        }
+                        setInterval(function() {
+                            secondsElapsed++;
+                            updateTimerDisplay();
+                        }, 1000);
+                        // Initialize display
+                        updateTimerDisplay();
+                    </script>
+                
                     <div class="bg-white shadow rounded-lg mb-4">
                         <div class="p-6">
                             <h6 class="font-semibold mb-4">Tiến độ hoàn thành</h6>

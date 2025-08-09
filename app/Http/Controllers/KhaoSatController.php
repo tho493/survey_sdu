@@ -58,13 +58,21 @@ class KhaoSatController extends Controller
             ], 403);
         }
 
+        // Validate reCAPTCHA
+        $request->validate([
+            'g-recaptcha-response' => ['required', new \App\Rules\Recaptcha]
+        ], [
+            'g-recaptcha-response.required' => 'Vui lòng xác thực reCAPTCHA.'
+        ]);
+
         DB::beginTransaction();
         try {
             // Tạo phiếu khảo sát
             $phieuKhaoSat = PhieuKhaoSat::create([
                 'dot_khaosat_id' => $dotKhaoSat->id,
                 'ma_nguoi_traloi' => $request->ma_nguoi_traloi,
-                'metadata' => $request->metadata,
+                'metadata' => collect($request->metadata)->except('thoigian_batdau'),
+                'thoigian_batdau' => $request->metadata['thoigian_batdau'] ?? null,
                 'trangthai' => 'draft',
                 'ip_address' => $request->ip(),
                 'user_agent' => $request->userAgent()
@@ -102,7 +110,7 @@ class KhaoSatController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Gửi khảo sát thành công',
-                'redirect' => route('khao-sat.thank-you')
+                'redirect' => route('thanks')
             ]);
 
         } catch (\Exception $e) {

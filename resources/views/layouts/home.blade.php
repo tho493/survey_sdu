@@ -9,7 +9,7 @@
 
     {{-- Tailwind via CDN for quick prototyping; replace with @vite for production --}}
     <script src="https://cdn.tailwindcss.com"></script>
-
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
     <style>
         /* Optional: custom container width to feel closer to the screenshot */

@@ -302,6 +302,108 @@
         ::-webkit-scrollbar-thumb:hover {
             background: #94a3b8;
         }
+
+
+        /* ---------- MOBILE SIDEBAR ---------- */
+        @media (max-width: 992px) {
+            #wrapper {
+                overflow-x: hidden;
+            }
+
+            /* Đưa sidebar full-height và ẩn ra ngoài màn hình */
+            #sidebar {
+                position: fixed;
+                left: 0;
+                top: 0;
+                height: 100vh;
+                width: 82vw;
+                /* rộng ~80% màn hình */
+                max-width: 320px;
+                min-width: auto;
+                max-width: none;
+                margin: 0;
+                border-radius: 0 20px 20px 0;
+                transform: translateX(-100%);
+                transition: transform .35s cubic-bezier(.4, 0, .2, 1);
+                z-index: 1050;
+                /* trên nội dung, dưới dropdown */
+            }
+
+            /* Khi mở */
+            #sidebar.active {
+                transform: translateX(0);
+            }
+
+            /* Không tự thu nhỏ/mở rộng bằng hover trên mobile */
+            #sidebar.collapsed {
+                min-width: auto;
+                max-width: none;
+            }
+
+            /* Nội dung không bị chèn lề trên mobile */
+            #content,
+            #sidebar.collapsed~#content {
+                margin-left: 0 !important;
+            }
+
+            /* Backdrop tối nền khi mở menu */
+            .sidebar-backdrop {
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, .35);
+                opacity: 0;
+                visibility: hidden;
+                transition: opacity .25s ease, visibility .25s ease;
+                z-index: 1040;
+            }
+
+            .sidebar-backdrop.show {
+                opacity: 1;
+                visibility: visible;
+            }
+
+            /* Tăng vùng chạm và cỡ chữ mục menu cho mobile */
+            #sidebar ul li a {
+                padding: 16px 20px;
+                font-size: 1.05rem;
+            }
+
+            #sidebar ul li a i {
+                font-size: 1.35rem;
+            }
+        }
+
+        /* --------- DESKTOP LAYOUT (giữ như cũ) --------- */
+        /* Đảm bảo content lệch trái 240px khi có sidebar ở desktop */
+        @media (min-width: 992px) {
+            #content {
+                margin-left: 240px;
+            }
+
+            #sidebar.collapsed {
+                min-width: 64px;
+                max-width: 64px;
+                transition: all 0.3s cubic-bezier(.4, 2, .6, 1);
+            }
+
+            #sidebar.collapsed~#content {
+                margin-left: 84px;
+            }
+
+            #sidebar.collapsed ul li a span {
+                opacity: 0;
+                margin-left: -24px;
+                pointer-events: none;
+            }
+        }
+
+        @media (max-width: 992px) {
+            #sidebar ul li a span {
+                opacity: 1;
+                margin-left: 12px;
+                pointer-events: auto;
+            }
+        }
     </style>
     @stack('styles')
 </head>
@@ -309,13 +411,8 @@
 <body>
     <div id="wrapper">
         <!-- Sidebar -->
-        <nav id="sidebar" class="collapsed">
-            <!-- <div class="sidebar-header">
-                <a href="{{ route('admin.dashboard.index') }}" class="text-white" style="text-decoration: none;">
-                    <h4><i class="bi bi-grid-1x2-fill"></i> <span>Admin Panel</span></h4>
-                </a>
-            </div> -->
-            <ul class="list-unstyled components">
+        <nav id="sidebar">
+            <ul class="list-unstyled components" style="position: relative; z-index: 2;">
                 <li>
                     <a href="{{ route('admin.dashboard.index') }}"
                         class="{{ request()->routeIs('admin.dashboard.*') ? 'active' : '' }}">
@@ -359,16 +456,21 @@
                     </a>
                 </li>
             </ul>
+            <div id="sidebar-backdrop" class="sidebar-backdrop d-lg-none" style="z-index: 1;"></div>
         </nav>
 
         <!-- Page Content -->
         <div id="content">
             <!-- Top Navbar -->
             <nav class="navbar navbar-expand-lg navbar-light">
+                <button id="mobileSidebarToggle" class="navbar-btn me-2 d-lg-none" aria-controls="sidebar"
+                    aria-expanded="false" aria-label="Mở menu">
+                    <i class="bi bi-list fs-3"></i>
+                </button>
                 <div class="container-fluid">
                     <!-- Tiêu đề trang web -->
                     <h4 class="navbar-brand">
-                        <i class="bi bi-grid-1x2-fill"></i> <span>Admin Panel</span>
+                        <i class="bi bi-grid-1x2-fill"></i> <span id="admin-panel">Admin Panel</span>
                     </h4>
 
                     <div class="ms-auto profile-dropdown">
@@ -469,6 +571,122 @@
             });
         });
     </script>
+    <script>
+        $(function () {
+            const $sidebar = $('#sidebar');
+            const $content = $('#content');
+            const $backdrop = $('#sidebar-backdrop');
+            const $toggleBtn = $('#mobileSidebarToggle');
+            const $navbarBrand = $('#admin-panel');
+            const isMobile = () => window.matchMedia('(max-width: 992px)').matches;
+
+            function openSidebarMobile() {
+                $sidebar.removeClass('collapsed')
+                    .addClass('active');
+                $backdrop.addClass('show');
+                $('body').addClass('overflow-hidden');
+                $toggleBtn.attr('aria-expanded', 'true');
+            }
+            function closeSidebarMobile() {
+                $sidebar.removeClass('active');
+                $backdrop.removeClass('show');
+                $('body').removeClass('overflow-hidden');
+                $toggleBtn.attr('aria-expanded', 'false');
+            }
+
+            // --- Init state
+            if (isMobile()) {
+                $sidebar.removeClass('collapsed');
+                $content.removeClass('active');
+                $navbarBrand.hide();
+            } else {
+                $sidebar.addClass('collapsed');
+                $content.addClass('active');
+                $navbarBrand.show();
+
+                $sidebar.on('mouseenter.desktop', function () {
+                    if (!isMobile()) {
+                        $sidebar.removeClass('collapsed');
+                        $content.removeClass('active');
+                    }
+                }).on('mouseleave.desktop', function () {
+                    if (!isMobile()) {
+                        $sidebar.addClass('collapsed');
+                        $content.addClass('active');
+                    }
+                });
+            }
+
+            // --- Toggle button (mobile)
+            $toggleBtn.on('click', function () {
+                if ($sidebar.hasClass('active')) closeSidebarMobile();
+                else openSidebarMobile();
+            });
+
+            // --- Backdrop click để đóng
+            $backdrop.on('click', closeSidebarMobile);
+
+            // --- Đóng khi bấm Esc (mobile)
+            $(document).on('keydown', function (e) {
+                if (e.key === 'Escape' && isMobile() && $sidebar.hasClass('active')) {
+                    closeSidebarMobile();
+                }
+            });
+
+            // --- Bấm vào 1 link trong sidebar thì đóng (mobile)
+            $('#sidebar a').on('click', function () {
+                if (isMobile()) closeSidebarMobile();
+            });
+
+            // --- Khi thay đổi kích thước màn hình, reset trạng thái phù hợp
+            $(window).on('resize', function () {
+                if (isMobile()) {
+                    // Tắt behavior hover desktop
+                    $sidebar.off('.desktop');
+                    // Đưa về trạng thái đóng khi vừa chuyển xuống mobile
+                    closeSidebarMobile();
+                    $sidebar.removeClass('collapsed');
+                    $content.removeClass('active');
+                } else {
+                    // Desktop: đảm bảo hover hoạt động
+                    $backdrop.removeClass('show');
+                    $('body').removeClass('overflow-hidden');
+                    $toggleBtn.attr('aria-expanded', 'false');
+
+                    // Thiết lập lại hover nếu bị remove trước đó
+                    $sidebar.addClass('collapsed');
+                    $content.addClass('active');
+                    $sidebar.off('.desktop').on('mouseenter.desktop', function () {
+                        if (!isMobile()) {
+                            $sidebar.removeClass('collapsed');
+                            $content.removeClass('active');
+                        }
+                    }).on('mouseleave.desktop', function () {
+                        if (!isMobile()) {
+                            $sidebar.addClass('collapsed');
+                            $content.addClass('active');
+                        }
+                    });
+                }
+            });
+
+            // --- Tự ẩn alerts sau 5s (giữ như cũ)
+            setTimeout(function () {
+                $('.alert:not(.alert-permanent)').fadeOut('slow', function () {
+                    $(this).alert('close');
+                });
+            }, 5000);
+
+            // --- Smooth scroll (giữ như cũ)
+            $('a[href*="#"]').on('click', function (e) {
+                if ($(this).attr('href').length > 1 && $(this).attr('href').charAt(0) === '#') {
+                    e.preventDefault();
+                    $('html, body').animate({ scrollTop: $($(this).attr('href')).offset().top }, 500, 'linear');
+                }
+            });
+        });
+    </script>
+
     @stack('scripts')
 </body>
 

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Models\User;
+use App\Rules\Recaptcha;
 
 class LoginController extends Controller
 {
@@ -18,7 +19,8 @@ class LoginController extends Controller
     {
         $credentials = $request->validate([
             'tendangnhap' => 'required',
-            'matkhau' => 'required'
+            'matkhau' => 'required',
+            'g-recaptcha-response' => ['required', new Recaptcha]
         ]);
 
         // Kiểm tra với MD5
