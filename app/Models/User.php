@@ -28,8 +28,18 @@ class User extends Authenticatable
         return $this->matkhau;
     }
 
+    // public function getAuthIdentifierName()
+    // {
+    //     return 'tendangnhap';
+    // }
+
     public function getAuthIdentifierName()
     {
-        return 'tendangnhap';
+        return 'id';
     }
+
+    // public function getAuthIdentifier()
+    // {
+    //     return 'id';
+    // }
 }

@@ -6,11 +6,10 @@ use App\Http\Controllers\Admin\UserManagementController;
 use App\Http\Controllers\Admin\SystemConfigController;
 use App\Http\Controllers\Admin\ReportController;
 use App\Http\Controllers\Admin\LogController;
-use App\Http\Controllers\Admin\DoiTuongController;
 use App\Http\Controllers\Admin\MauKhaoSatController;
 use App\Http\Controllers\Admin\DotKhaoSatController;
 use App\Http\Controllers\Admin\BaoCaoController;
-use App\Http\Controllers\CauHoiController;
+use App\Http\Controllers\Admin\CauHoiController;
 
 
 Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () {
@@ -25,15 +24,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
     Route::put('users/{tendangnhap}', [UserManagementController::class, 'update'])->name('users.update');
     Route::delete('users/{tendangnhap}', [UserManagementController::class, 'destroy'])->name('users.destroy');
 
-    // Đối tượng khảo sát
-    Route::resource('doi-tuong', DoiTuongController::class);
-    Route::get('doi-tuong', [DoiTuongController::class, 'index'])->name('doi-tuong.index');
-    Route::get('doi-tuong/create', [DoiTuongController::class, 'create'])->name('doi-tuong.create');
-    Route::post('doi-tuong', [DoiTuongController::class, 'store'])->name('doi-tuong.store');
-    Route::get('doi-tuong/{ma_doituong}/edit', [DoiTuongController::class, 'edit'])->name('doi-tuong.edit');
-    Route::put('doi-tuong/{ma_doituong}', [DoiTuongController::class, 'update'])->name('doi-tuong.update');
-    Route::delete('doi-tuong/{ma_doituong}', [DoiTuongController::class, 'destroy'])->name('doi-tuong.destroy');
-
     // Mẫu khảo sát
     Route::resource('mau-khao-sat', MauKhaoSatController::class);
     Route::get('mau-khao-sat', [MauKhaoSatController::class, 'index'])->name('mau-khao-sat.index');
@@ -45,27 +35,27 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
     Route::delete('mau-khao-sat/{mauKhaoSat}', [UserManagementController::class, 'destroy'])->name('mau-khao-sat.destroy');
 
     // Câu hỏi
-    Route::post('mau-khao-sat/{mauKhaoSat}/cau-hoi', [CauHoiController::class, 'store'])
-        ->name('cau-hoi.store');
-    Route::put('cau-hoi/{cauHoi}', [CauHoiController::class, 'update'])
-        ->name('cau-hoi.update');
-    Route::delete('cau-hoi/{cauHoi}', [CauHoiController::class, 'destroy'])
-        ->name('cau-hoi.destroy');
+    Route::post('mau-khao-sat/{mauKhaoSat}/cau-hoi', [CauHoiController::class, 'store'])->name('cau-hoi.store');
+    Route::put('cau-hoi/{cauHoi}', [CauHoiController::class, 'update'])->name('cau-hoi.update');
+    Route::delete('cau-hoi/{cauHoi}', [CauHoiController::class, 'destroy'])->name('cau-hoi.destroy');
+    Route::post('cau-hoi/update-order', [CauHoiController::class, 'updateOrder'])->name('cau-hoi.update-order');
+
+
 
     // Đợt khảo sát
-    Route::resource('dot-khao-sat', DotKhaoSatController::class);
-    Route::post('dot-khao-sat/{dotKhaoSat}/activate', [DotKhaoSatController::class, 'activate'])
-        ->name('dot-khao-sat.activate');
-    Route::post('dot-khao-sat/{dotKhaoSat}/close', [DotKhaoSatController::class, 'close'])
-        ->name('dot-khao-sat.close');
+    Route::prefix('dot-khao-sat')->name('dot-khao-sat.')->group(function () {
+        Route::resource('/', DotKhaoSatController::class)->parameters(['' => 'dotKhaoSat']);
+        Route::post('/store', [DotKhaoSatController::class, 'store'])->name('store');
+        Route::get('/{dotKhaoSat}', [DotKhaoSatController::class, 'show'])->name('show');
+        Route::post('/{dotKhaoSat}/activate', [DotKhaoSatController::class, 'activate'])->name('activate');
+        Route::post('/{dotKhaoSat}/close', [DotKhaoSatController::class, 'close'])->name('close');
+    });
 
     // Báo cáo
     Route::prefix('bao-cao')->name('bao-cao.')->group(function () {
         Route::get('/', [BaoCaoController::class, 'index'])->name('index');
-        Route::get('/dot-khao-sat/{dotKhaoSat}', [BaoCaoController::class, 'dotKhaoSat'])
-            ->name('dot-khao-sat');
-        Route::get('/export/{dotKhaoSat}', [BaoCaoController::class, 'export'])
-            ->name('export');
+        Route::get('/dot-khao-sat/{dotKhaoSat}', [BaoCaoController::class, 'dotKhaoSat'])->name('dot-khao-sat');
+        Route::get('/export/{dotKhaoSat}', [BaoCaoController::class, 'export'])->name('export');
     });
 
     // Reports

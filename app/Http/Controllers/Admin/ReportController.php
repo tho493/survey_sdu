@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\DotKhaoSat;
 use App\Models\PhieuKhaoSat;
-use App\Models\DoiTuongKhaoSat;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
@@ -15,7 +14,7 @@ class ReportController extends Controller
     public function index(Request $request)
     {
         // Lấy danh sách đợt khảo sát để lọc
-        $dotKhaoSats = DotKhaoSat::with(['mauKhaoSat.doiTuong'])
+        $dotKhaoSats = DotKhaoSat::with(['mauKhaoSat'])
             ->orderBy('created_at', 'desc')
             ->get();
 
@@ -25,14 +24,10 @@ class ReportController extends Controller
         // Biểu đồ theo tháng
         $bieuDoThang = $this->getBieuDoThang($request);
 
-        // Thống kê theo đối tượng
-        $thongKeDoiTuong = $this->getThongKeDoiTuong($request);
-
         return view('admin.reports.index', compact(
             'dotKhaoSats',
             'tongQuan',
             'bieuDoThang',
-            'thongKeDoiTuong'
         ));
     }
 
@@ -120,27 +115,6 @@ class ReportController extends Controller
         return $result;
     }
 
-    private function getThongKeDoiTuong($request)
-    {
-        return DB::table('phieu_khaosat as pk')
-            ->join('dot_khaosat as dk', 'pk.dot_khaosat_id', '=', 'dk.id')
-            ->join('mau_khaosat as mk', 'dk.mau_khaosat_id', '=', 'mk.id')
-            ->join('doituong_khaosat as dt', 'mk.ma_doituong', '=', 'dt.ma_doituong')
-            ->select(
-                'dt.ten_doituong',
-                DB::raw('COUNT(*) as tong_phieu'),
-                DB::raw('SUM(CASE WHEN pk.trangthai = "completed" THEN 1 ELSE 0 END) as phieu_hoan_thanh')
-            )
-            ->when($request->filled('from_date'), function ($q) use ($request) {
-                $q->whereDate('pk.created_at', '>=', $request->from_date);
-            })
-            ->when($request->filled('to_date'), function ($q) use ($request) {
-                $q->whereDate('pk.created_at', '<=', $request->to_date);
-            })
-            ->groupBy('dt.ma_doituong', 'dt.ten_doituong')
-            ->get();
-    }
-
     private function getTrendAnalysis($year)
     {
         // Phân tích xu hướng theo quý
@@ -159,15 +133,14 @@ class ReportController extends Controller
         return DB::table('phieu_khaosat as pk')
             ->join('dot_khaosat as dk', 'pk.dot_khaosat_id', '=', 'dk.id')
             ->join('mau_khaosat as mk', 'dk.mau_khaosat_id', '=', 'mk.id')
-            ->join('doituong_khaosat as dt', 'mk.ma_doituong', '=', 'dt.ma_doituong')
             ->selectRaw('
-                dt.ten_doituong,
+                mk.ten_mau,
                 COUNT(*) as total,
                 SUM(CASE WHEN pk.trangthai = "completed" THEN 1 ELSE 0 END) as completed,
                 ROUND(SUM(CASE WHEN pk.trangthai = "completed" THEN 1 ELSE 0 END) * 100.0 / COUNT(*), 2) as completion_rate
             ')
             ->whereYear('pk.thoigian_batdau', $year)
-            ->groupBy('dt.ma_doituong', 'dt.ten_doituong')
+            ->groupBy('mk.id')
             ->orderBy('completion_rate', 'desc')
             ->get();
     }

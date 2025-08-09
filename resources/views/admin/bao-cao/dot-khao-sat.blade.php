@@ -4,32 +4,39 @@
 
 @section('content')
     <div class="container-fluid">
-        <nav aria-label="breadcrumb">
+        <nav aria-label="breadcrumb" class="mb-3">
             <ol class="breadcrumb">
-                <li class="breadcrumb-item"><a href="{{ route('bao-cao.index') }}">Báo cáo</a></li>
-                <li class="breadcrumb-item active">{{ $dotKhaoSat->ten_dot }}</li>
+                <li class="breadcrumb-item"><a href="{{ route('admin.bao-cao.index') }}">Báo cáo</a></li>
+                <li class="breadcrumb-item active" aria-current="page">{{ $dotKhaoSat->ten_dot }}</li>
             </ol>
         </nav>
 
         {{-- Header Báo cáo --}}
-        <div class="d-flex justify-content-between align-items-center mb-4">
-            <div>
-                <h1 class="h3 mb-0">{{ $dotKhaoSat->ten_dot }}</h1>
+        <div class="row align-items-center mb-4">
+            <div class="col-md-8 col-12">
+                <h1 class="h3 mb-1">{{ $dotKhaoSat->ten_dot }}</h1>
                 <p class="text-muted mb-0">
-                    Đối tượng: <strong>{{ $dotKhaoSat->mauKhaoSat->doiTuong->ten_doituong ?? 'N/A' }}</strong> |
-                    Thời gian: <strong>{{ $dotKhaoSat->tungay->format('d/m/Y') }} -
-                        {{ $dotKhaoSat->denngay->format('d/m/Y') }}</strong>
+                    <span class="fw-semibold">Tên đợt khảo sát:</span>
+                    <span class="fw-bold">{{ $dotKhaoSat->ten_dot ?? 'N/A' }}</span>
+                    <span class="mx-2">|</span>
+                    <span class="fw-semibold">Thời gian:</span>
+                    <span class="fw-bold">
+                        {{ \Carbon\Carbon::parse($dotKhaoSat->tungay)->format('d/m/Y') }} -
+                        {{ \Carbon\Carbon::parse($dotKhaoSat->denngay)->format('d/m/Y') }}
+                    </span>
                 </p>
             </div>
-            <div class="btn-group">
-                <a href="{{ route('bao-cao.export', ['dotKhaoSat' => $dotKhaoSat, 'format' => 'excel']) }}"
-                    class="btn btn-success">
-                    <i class="bi bi-file-earmark-excel"></i> Xuất Excel
-                </a>
-                <a href="{{ route('bao-cao.export', ['dotKhaoSat' => $dotKhaoSat, 'format' => 'pdf']) }}"
-                    class="btn btn-danger">
-                    <i class="bi bi-file-earmark-pdf"></i> Xuất PDF
-                </a>
+            <div class="col-md-4 col-12 text-md-end mt-3 mt-md-0">
+                <div class="btn-group" role="group" aria-label="Export group">
+                    <a href="{{ route('admin.bao-cao.export', ['dotKhaoSat' => $dotKhaoSat, 'format' => 'excel']) }}"
+                        class="btn btn-success">
+                        <i class="bi bi-file-earmark-excel"></i> Xuất Excel
+                    </a>
+                    <a href="{{ route('admin.bao-cao.export', ['dotKhaoSat' => $dotKhaoSat, 'format' => 'pdf']) }}"
+                        class="btn btn-danger">
+                        <i class="bi bi-file-earmark-pdf"></i> Xuất PDF
+                    </a>
+                </div>
             </div>
         </div>
 
@@ -41,10 +48,12 @@
         {{-- Biểu đồ phản hồi theo ngày --}}
         <div class="card shadow mb-4">
             <div class="card-header">
-                <h6 class="m-0 font-weight-bold text-primary">Phản hồi theo ngày</h6>
+                <h6 class="mb-0 fw-bold text-primary">Phản hồi theo ngày</h6>
             </div>
             <div class="card-body">
-                <canvas id="dailyResponseChart" height="100"></canvas>
+                <div class="chart-responsive">
+                    <canvas id="dailyResponseChart" height="100"></canvas>
+                </div>
             </div>
         </div>
 
@@ -52,10 +61,12 @@
         <h3 class="h4 mb-3">Phân tích câu trả lời</h3>
         @forelse($dotKhaoSat->mauKhaoSat->cauHoi->sortBy('thutu') as $index => $cauHoi)
             <div class="card shadow mb-4">
-                <div class="card-header">
-                    <h6 class="m-0 font-weight-bold text-primary">
-                        Câu {{ $index + 1 }}: {{ $cauHoi->noidung_cauhoi }}
-                    </h6>
+                <div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center">
+                    <div>
+                        <h6 class="mb-1 fw-bold text-primary">
+                            Câu {{ $index + 1 }}: {{ $cauHoi->noidung_cauhoi }}
+                        </h6>
+                    </div>
                     <small class="text-muted">{{ $thongKeCauHoi[$cauHoi->id]['total'] }} lượt trả lời</small>
                 </div>
                 <div class="card-body">
@@ -63,12 +74,14 @@
 
                     @if($stats['type'] == 'chart' && !$stats['data']->isEmpty())
                         <div class="row">
-                            <div class="col-md-6">
-                                <canvas id="chart-cauhoi-{{ $cauHoi->id }}" height="200"></canvas>
+                            <div class="col-md-6 mb-3 mb-md-0">
+                                <div class="chart-responsive">
+                                    <canvas id="chart-cauhoi-{{ $cauHoi->id }}" height="200"></canvas>
+                                </div>
                             </div>
                             <div class="col-md-6">
                                 <div class="table-responsive">
-                                    <table class="table table-sm table-bordered">
+                                    <table class="table table-sm table-bordered align-middle mb-0">
                                         <thead class="table-light">
                                             <tr>
                                                 <th>Phương án</th>
@@ -96,7 +109,7 @@
                             @endforeach
                         </ul>
                     @else
-                        <p class="text-muted text-center">Chưa có dữ liệu cho câu hỏi này.</p>
+                        <p class="text-muted text-center mb-0">Chưa có dữ liệu cho câu hỏi này.</p>
                     @endif
                 </div>
             </div>
@@ -107,18 +120,18 @@
         {{-- Danh sách chi tiết phiếu trả lời --}}
         <div class="card shadow mb-4">
             <div class="card-header">
-                <h6 class="m-0 font-weight-bold text-primary">Danh sách phiếu đã hoàn thành</h6>
+                <h6 class="mb-0 fw-bold text-primary">Danh sách phiếu đã hoàn thành</h6>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
                             <tr>
-                                <th>Mã người trả lời</th>
-                                <th>Họ tên</th>
-                                <th>Đơn vị</th>
-                                <th>Thời gian hoàn thành</th>
-                                <th></th>
+                                <th scope="col">Mã người trả lời</th>
+                                <th scope="col">Họ tên</th>
+                                <th scope="col">Đơn vị</th>
+                                <th scope="col">Thời gian hoàn thành</th>
+                                <th scope="col"></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -127,10 +140,11 @@
                                     <td>{{ $phieu->ma_nguoi_traloi }}</td>
                                     <td>{{ $phieu->metadata['hoten'] ?? 'N/A' }}</td>
                                     <td>{{ $phieu->metadata['donvi'] ?? 'N/A' }}</td>
-                                    <td>{{ $phieu->thoigian_hoanthanh ? $phieu->thoigian_hoanthanh->format('d/m/Y H:i') : 'N/A' }}
+                                    <td>
+                                        {{ $phieu->thoigian_hoanthanh ? $phieu->thoigian_hoanthanh->format('d/m/Y H:i') : 'N/A' }}
                                     </td>
                                     <td>
-                                        <button class="btn btn-sm btn-outline-info" title="Xem chi tiết phiếu">
+                                        <button class="btn btn-sm btn-outline-info" title="Xem chi tiết phiếu" type="button">
                                             <i class="bi bi-eye"></i>
                                         </button>
                                     </td>
@@ -199,6 +213,6 @@
                     }
                 @endif
             @endforeach
-                });
+                                                                    });
     </script>
 @endpush

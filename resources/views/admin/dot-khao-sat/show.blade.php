@@ -29,22 +29,14 @@
                             <td>{{ $dotKhaoSat->mauKhaoSat->ten_mau ?? 'N/A' }}</td>
                         </tr>
                         <tr>
-                            <td><strong>Đối tượng:</strong></td>
-                            <td>
-                                <span class="badge bg-info">
-                                    {{ $dotKhaoSat->mauKhaoSat->doiTuong->ten_doituong ?? 'N/A' }}
-                                </span>
-                            </td>
-                        </tr>
-                        <tr>
                             <td><strong>Năm học:</strong></td>
                             <td>{{ $dotKhaoSat->namHoc->namhoc ?? 'N/A' }}</td>
                         </tr>
                         <tr>
                             <td><strong>Thời gian:</strong></td>
                             <td>
-                                {{ $dotKhaoSat->tungay->format('d/m/Y') }} - 
-                                {{ $dotKhaoSat->denngay->format('d/m/Y') }}
+                                {{ \Carbon\Carbon::parse($dotKhaoSat->tungay)->format('d/m/Y') }} - 
+                                {{ \Carbon\Carbon::parse($dotKhaoSat->denngay)->format('d/m/Y') }}
                                 @php
                                     $daysLeft = now()->diffInDays($dotKhaoSat->denngay, false);
                                 @endphp
@@ -180,7 +172,7 @@
                         @endif
 
                         @if($thongKe['tong_phieu'] > 0)
-                            <a href="{{ route('bao-cao.dot-khao-sat', $dotKhaoSat) }}" 
+                            <a href="{{ route('admin.bao-cao.dot-khao-sat', $dotKhaoSat) }}" 
                                class="btn btn-info">
                                 <i class="bi bi-graph-up"></i> Xem báo cáo
                             </a>

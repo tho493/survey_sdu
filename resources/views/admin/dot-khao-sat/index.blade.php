@@ -57,7 +57,6 @@
                             <th>ID</th>
                             <th>Tên đợt</th>
                             <th>Mẫu khảo sát</th>
-                            <th>Đối tượng</th>
                             <th>Thời gian</th>
                             <th>Tiến độ</th>
                             <th>Trạng thái</th>
@@ -76,14 +75,9 @@
                                 </td>
                                 <td>{{ $dot->mauKhaoSat->ten_mau ?? 'N/A' }}</td>
                                 <td>
-                                    <span class="badge bg-info">
-                                        {{ $dot->mauKhaoSat->doiTuong->ten_doituong ?? 'N/A' }}
-                                    </span>
-                                </td>
-                                <td>
                                     <small>
-                                        {{ $dot->tungay->format('d/m/Y') }} - 
-                                        {{ $dot->denngay->format('d/m/Y') }}
+                                        {{ \Carbon\Carbon::parse($dot->tungay)->format('d/m/Y') }} - 
+                                        {{ \Carbon\Carbon::parse($dot->denngay)->format('d/m/Y') }}
                                     </small>
                                 </td>
                                 <td>

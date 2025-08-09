@@ -26,12 +26,20 @@
 1. Cài đặt các thư viện cần thiết
 
     ```sh
-    composer require laravel/ui
-    composer require maatwebsite/excel
-    composer require barryvdh/laravel-dompdf
+    composer install
     ```
 
-2. Khởi chạy
+2. Tạo file .env
+
+-   Hãy đổi tên file `.env.example` thành `.env`, sau đó chạy lệnh `php artisan key:generate` để tạo key.
+
+3. Khởi tạo dữ liệu.
+
+    ```sh
+    php artisan db:seed --class=DatabaseSeeder
+    ```
+
+4. Khởi chạy
 
     ```sh
     php artisan serve

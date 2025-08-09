@@ -1,11 +1,10 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Admin;
 
+use App\Http\Controllers\Controller;
 use App\Models\CauHoiKhaoSat;
 use App\Models\MauKhaoSat;
-use App\Models\NhomCauHoi;
-use App\Models\PhuongAnTraLoi;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -14,43 +13,51 @@ class CauHoiController extends Controller
     public function store(Request $request, MauKhaoSat $mauKhaoSat)
     {
         $validated = $request->validate([
-            'nhom_cauhoi_id' => 'nullable|exists:nhom_cauhoi,id',
-            'noidung_cauhoi' => 'required',
+            'noidung_cauhoi' => 'required|string',
             'loai_cauhoi' => 'required|in:single_choice,multiple_choice,text,likert,rating,date,number',
             'batbuoc' => 'boolean',
-            'thutu' => 'integer',
-            'phuong_an' => 'required_if:loai_cauhoi,single_choice,multiple_choice,likert|array',
-            'phuong_an.*' => 'required|string'
+            'thutu' => 'integer|min:0',
+            // Yêu cầu mảng phuong_an nếu loại câu hỏi là lựa chọn
+            'phuong_an' => 'required_if:loai_cauhoi,single_choice,multiple_choice,likert|array|min:2',
+            'phuong_an.*' => 'required|string|max:500' // Mỗi phương án không quá 500 ký tự
+        ], [
+            'phuong_an.required_if' => 'Vui lòng cung cấp các phương án trả lời.',
+            'phuong_an.min' => 'Phải có ít nhất 2 phương án trả lời.'
         ]);
 
         DB::beginTransaction();
         try {
+            // Lấy thứ tự lớn nhất hiện tại và cộng thêm 1
+            $thutu = $mauKhaoSat->cauHoi()->max('thutu') + 1;
+
             // Tạo câu hỏi
             $cauHoi = $mauKhaoSat->cauHoi()->create([
-                'nhom_cauhoi_id' => $validated['nhom_cauhoi_id'],
                 'noidung_cauhoi' => $validated['noidung_cauhoi'],
                 'loai_cauhoi' => $validated['loai_cauhoi'],
                 'batbuoc' => $validated['batbuoc'] ?? true,
-                'thutu' => $validated['thutu'] ?? 0
+                'thutu' => $validated['thutu'] > 0 ? $validated['thutu'] : $thutu
             ]);
 
-            // Tạo phương án trả lời
+            // Tạo các phương án trả lời nếu có
             if (isset($validated['phuong_an'])) {
+                $phuongAnData = [];
                 foreach ($validated['phuong_an'] as $index => $phuongAn) {
-                    $cauHoi->phuongAnTraLoi()->create([
+                    $phuongAnData[] = [
                         'noidung' => $phuongAn,
-                        'giatri' => $index + 1,
-                        'thutu' => $index
-                    ]);
+                        'giatri' => $index + 1, // Giá trị có thể dùng để phân tích
+                        'thutu' => $index + 1
+                    ];
                 }
+                $cauHoi->phuongAnTraLoi()->createMany($phuongAnData);
             }
 
             DB::commit();
 
+            // Trả về JSON để JavaScript xử lý
             return response()->json([
                 'success' => true,
-                'message' => 'Thêm câu hỏi thành công',
-                'data' => $cauHoi->load('phuongAnTraLoi')
+                'message' => 'Thêm câu hỏi thành công!',
+                'cauHoi' => $cauHoi->load('phuongAnTraLoi') // Gửi lại dữ liệu câu hỏi vừa tạo
             ]);
 
         } catch (\Exception $e) {
@@ -102,20 +109,20 @@ class CauHoiController extends Controller
                 CauHoiKhaoSat::where('id', $item['id'])
                     ->update(['thutu' => $item['thutu']]);
             }
-
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Cập nhật thứ tự thành công'
+                'message' => 'Cập nhật thứ tự thành công.'
             ]);
 
         } catch (\Exception $e) {
             DB::rollback();
             return response()->json([
                 'success' => false,
-                'message' => 'Có lỗi xảy ra'
+                'message' => 'Có lỗi khi cập nhật thứ tự.'
             ], 500);
         }
     }
+
 }

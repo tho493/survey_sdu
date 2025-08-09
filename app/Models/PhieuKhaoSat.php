@@ -50,20 +50,20 @@ class PhieuKhaoSat extends Model
     }
 
     /**
-     * Tính thời gian hoàn thành (phút)
+     * Tính thời gian hoàn thành (phút) // Chưa hoạt động
      */
-    public function getThoiGianHoanThanhAttribute()
-    {
-        if (
-            !$this->thoigian_batdau || !$this->thoigian_hoanthanh ||
-            !($this->thoigian_batdau instanceof \Carbon\Carbon) ||
-            !($this->thoigian_hoanthanh instanceof \Carbon\Carbon)
-        ) {
-            return null;
-        }
+    // public function getThoiGianHoanThanhAttribute()
+    // {
+    //     if (
+    //         !$this->thoigian_batdau || !$this->thoigian_hoanthanh ||
+    //         !($this->thoigian_batdau instanceof \Carbon\Carbon) ||
+    //         !($this->thoigian_hoanthanh instanceof \Carbon\Carbon)
+    //     ) {
+    //         return null;
+    //     }
 
-        return $this->thoigian_batdau->diffInMinutes($this->thoigian_hoanthanh);
-    }
+    //     return $this->thoigian_batdau->diffInMinutes($this->thoigian_hoanthanh);
+    // }
 
     /**
      * Scope lọc theo trạng thái

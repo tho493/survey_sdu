@@ -3,130 +3,110 @@
 namespace App\Exports;
 
 use App\Models\DotKhaoSat;
-use Illuminate\Support\Facades\DB;
-use Maatwebsite\Excel\Sheet;
-use Maatwebsite\Excel\Writers\LaravelExcelWriter;
+use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\WithHeadings;
+use Maatwebsite\Excel\Concerns\WithMapping;
+use Maatwebsite\Excel\Concerns\ShouldAutoSize;
+use Maatwebsite\Excel\Concerns\WithStyles;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class KhaoSatExport
+class KhaoSatExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize, WithStyles
 {
     protected $dotKhaoSat;
+    protected $cauHoiHeaders = [];
+    protected $cauHoiCollection;
 
     public function __construct(DotKhaoSat $dotKhaoSat)
     {
-        $this->dotKhaoSat = $dotKhaoSat;
+        // Tải trước tất cả dữ liệu cần thiết để tối ưu
+        $this->dotKhaoSat = $dotKhaoSat->load([
+            'mauKhaoSat.cauHoi' => function ($query) {
+                $query->orderBy('thutu');
+            },
+            'phieuKhaoSat' => function ($query) {
+                $query->where('trangthai', 'completed')
+                    ->with(['chiTiet.phuongAn']);
+            }
+        ]);
+
+        // Tạo mảng header cho các câu hỏi
+        $this->cauHoiCollection = $this->dotKhaoSat->mauKhaoSat->cauHoi;
+        foreach ($this->cauHoiCollection as $index => $cauHoi) {
+            $this->cauHoiHeaders[] = "Câu " . ($index + 1) . ": " . $cauHoi->noidung_cauhoi;
+        }
     }
 
     /**
-     * maatwebsite/excel v1.1 expects you to return a closure for each sheet
+     * @return \Illuminate\Support\Collection // WITH ERROR
      */
-    public function sheets()
+    public function collection(): \App\Models\PhieuKhaoSat
     {
-        $sheets = [];
-
-        // Tổng quan sheet
-        $sheets['Tổng quan'] = function ($sheet) {
-            $tongQuanSheet = new TongQuanSheet($this->dotKhaoSat);
-            $sheet->appendRow($tongQuanSheet->headings());
-            foreach ($tongQuanSheet->collection() as $row) {
-                $sheet->appendRow($row);
-            }
-        };
-
-        // Chi tiết sheet
-        $sheets['Chi tiết phiếu'] = function ($sheet) {
-            $chiTietSheet = new ChiTietSheet($this->dotKhaoSat);
-            $sheet->appendRow($chiTietSheet->headings());
-            foreach ($chiTietSheet->collection() as $row) {
-                $sheet->appendRow((array) $row);
-            }
-        };
-
-        // Thêm sheet cho từng câu hỏi (nếu có class CauHoiSheet)
-        if (isset($this->dotKhaoSat->mauKhaoSat->cauHoi)) {
-            foreach ($this->dotKhaoSat->mauKhaoSat->cauHoi as $index => $cauHoi) {
-                $sheetName = 'Câu hỏi ' . ($index + 1);
-                $sheets[$sheetName] = function ($sheet) use ($cauHoi, $index) {
-                    if (class_exists('\App\Exports\CauHoiSheet')) {
-                        $cauHoiSheet = new \App\Exports\CauHoiSheet($this->dotKhaoSat, $cauHoi, $index + 1);
-                        if (method_exists($cauHoiSheet, 'headings')) {
-                            $sheet->appendRow($cauHoiSheet->headings());
-                        }
-                        $rows = $cauHoiSheet->collection();
-                        if (is_iterable($rows)) {
-                            foreach ($rows as $row) {
-                                $sheet->appendRow((array) $row);
-                            }
-                        }
-                    }
-                };
-            }
-        }
-
-        return $sheets;
-    }
-}
-
-class TongQuanSheet
-{
-    protected $dotKhaoSat;
-
-    public function __construct($dotKhaoSat)
-    {
-        $this->dotKhaoSat = $dotKhaoSat;
+        // Trả về collection các phiếu khảo sát đã hoàn thành
+        return $this->dotKhaoSat->phieuKhaoSat;
     }
 
-    public function collection()
+    /**
+     * @return array
+     */
+    public function headings(): array
     {
-        return [
-            ['Tên đợt khảo sát', $this->dotKhaoSat->ten_dot],
-            ['Mẫu khảo sát', $this->dotKhaoSat->mauKhaoSat->ten_mau],
-            ['Đối tượng', $this->dotKhaoSat->mauKhaoSat->doiTuong->ten_doituong],
-            ['Thời gian', $this->dotKhaoSat->tungay->format('d/m/Y') . ' - ' . $this->dotKhaoSat->denngay->format('d/m/Y')],
-            ['Tổng số phiếu', $this->dotKhaoSat->phieuKhaoSat()->count()],
-            ['Phiếu hoàn thành', $this->dotKhaoSat->phieuKhaoSat()->where('trangthai', 'completed')->count()],
-            ['Tỷ lệ hoàn thành', $this->dotKhaoSat->getTyLeHoanThanh() . '%']
-        ];
-    }
-
-    public function headings()
-    {
-        return ['Thông tin', 'Giá trị'];
-    }
-}
-
-class ChiTietSheet
-{
-    protected $dotKhaoSat;
-
-    public function __construct($dotKhaoSat)
-    {
-        $this->dotKhaoSat = $dotKhaoSat;
-    }
-
-    public function collection()
-    {
-        return DB::table('phieu_khaosat as pk')
-            ->where('pk.dot_khaosat_id', $this->dotKhaoSat->id)
-            ->select(
-                'pk.ma_nguoi_traloi',
-                DB::raw("JSON_UNQUOTE(JSON_EXTRACT(pk.metadata, '$.hoten')) as ho_ten"),
-                DB::raw("JSON_UNQUOTE(JSON_EXTRACT(pk.metadata, '$.donvi')) as don_vi"),
-                'pk.trangthai',
-                'pk.thoigian_batdau',
-                'pk.thoigian_hoanthanh'
-            )
-            ->get();
-    }
-
-    public function headings()
-    {
-        return [
+        // Ghép các header cố định với header câu hỏi
+        return array_merge([
+            'ID Phiếu',
             'Mã người trả lời',
             'Họ tên',
             'Đơn vị',
-            'Trạng thái',
-            'Thời gian bắt đầu',
-            'Thời gian hoàn thành'
+            'Email',
+            'Thời gian hoàn thành',
+        ], $this->cauHoiHeaders);
+    }
+
+    /**
+     * @param mixed $phieu
+     * @return array
+     */
+    public function map($phieu): array
+    {
+        // Tạo một mảng các câu trả lời đã được index theo cauhoi_id để tìm kiếm nhanh
+        $answersByQuestionId = $phieu->chiTiet->keyBy('cauhoi_id');
+        $rowAnswers = [];
+
+        // Lặp qua danh sách câu hỏi để đảm bảo các câu trả lời đúng thứ tự
+        foreach ($this->cauHoiCollection as $cauHoi) {
+            $answer = $answersByQuestionId->get($cauHoi->id);
+            if ($answer) {
+                // Sử dụng accessor `getGiaTriAttribute` đã tạo trong model PhieuKhaoSatChiTiet
+                $rowAnswers[] = $answer->GiaTri;
+            } else {
+                $rowAnswers[] = ''; // Để trống nếu không có câu trả lời
+            }
+        }
+
+        // Ghép thông tin phiếu với các câu trả lời
+        return array_merge([
+            $phieu->id,
+            $phieu->ma_nguoi_traloi,
+            $phieu->metadata['hoten'] ?? '',
+            $phieu->metadata['donvi'] ?? '',
+            $phieu->metadata['email'] ?? '',
+            $phieu->thoigian_hoanthanh ? $phieu->thoigian_hoanthanh->format('d/m/Y H:i') : '',
+        ], $rowAnswers);
+    }
+
+    /**
+     * Định dạng style cho file Excel.
+     */
+    public function styles(Worksheet $sheet)
+    {
+        // In đậm và tô màu nền cho dòng header
+        return [
+            1 => [
+                'font' => ['bold' => true],
+                'fill' => [
+                    'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                    'startColor' => ['argb' => 'FFDDDDDD'],
+                ]
+            ],
         ];
     }
 }

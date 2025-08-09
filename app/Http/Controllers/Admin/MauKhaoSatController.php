@@ -4,10 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use App\Models\MauKhaoSat;
-use App\Models\DoiTuongKhaoSat;
-use App\Models\NhomCauHoi;
-use App\Models\CauHoiKhaoSat;
-use App\Models\PhuongAnTraLoi;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
@@ -19,22 +16,32 @@ class MauKhaoSatController extends Controller
      */
     public function index(Request $request)
     {
-        $query = MauKhaoSat::with(['doiTuong', 'nguoiTao', 'cauHoi', 'dotKhaoSat']);
+        $query = MauKhaoSat::with(['nguoiTao', 'cauHoi', 'dotKhaoSat']);
 
         // Search
         if ($request->filled('search')) {
             $query->where('ten_mau', 'like', '%' . $request->search . '%');
         }
 
-        // Filter by doi tuong
-        if ($request->filled('ma_doituong')) {
-            $query->where('ma_doituong', $request->ma_doituong);
+        // Filter by user
+        if ($request->filled('nguoi_tao')) {
+            $query->where('nguoi_tao_id', $request->nguoi_tao);
+        }
+
+        // Filter by status
+        if ($request->filled('trangthai')) {
+            $query->where('trangthai', $request->trangthai);
+        }
+        // Filter by date
+        if ($request->filled('ngay_tao')) {
+            $query->where('created_at', $request->ngay_tao);
         }
 
         $mauKhaoSats = $query->orderBy('created_at', 'desc')->paginate(10);
-        $doiTuongs = DoiTuongKhaoSat::where('trangthai', 1)->get();
 
-        return view('admin.mau-khao-sat.index', compact('mauKhaoSats', 'doiTuongs'));
+        $dsNguoiTao = User::pluck('hoten', 'id');
+
+        return view('admin.mau-khao-sat.index', compact('mauKhaoSats', 'dsNguoiTao'));
     }
 
     /**
@@ -42,9 +49,7 @@ class MauKhaoSatController extends Controller
      */
     public function create()
     {
-        $doiTuongs = DoiTuongKhaoSat::where('trangthai', 1)->get();
-
-        return view('admin.mau-khao-sat.create', compact('doiTuongs'));
+        return view('admin.mau-khao-sat.create');
     }
 
     /**
@@ -54,21 +59,17 @@ class MauKhaoSatController extends Controller
     {
         $validated = $request->validate([
             'ten_mau' => 'required|max:255',
-            'ma_doituong' => 'required|exists:doituong_khaosat,ma_doituong',
             'mota' => 'nullable'
         ], [
             'ten_mau.required' => 'Vui lòng nhập tên mẫu khảo sát',
-            'ma_doituong.required' => 'Vui lòng chọn đối tượng khảo sát',
-            'ma_doituong.exists' => 'Đối tượng khảo sát không hợp lệ'
         ]);
 
         DB::beginTransaction();
         try {
             $mauKhaoSat = MauKhaoSat::create([
                 'ten_mau' => $validated['ten_mau'],
-                'ma_doituong' => $validated['ma_doituong'],
                 'mota' => $validated['mota'],
-                'nguoi_tao_id' => Auth::id(),
+                'nguoi_tao_id' => Auth::user()->id,
                 'trangthai' => 'draft'
             ]);
 
@@ -90,10 +91,9 @@ class MauKhaoSatController extends Controller
      */
     public function edit(MauKhaoSat $mauKhaoSat)
     {
-        $mauKhaoSat->load(['nhomCauHoi.cauHoi.phuongAnTraLoi', 'doiTuong']);
-        $doiTuongs = DoiTuongKhaoSat::where('trangthai', 1)->get();
+        $mauKhaoSat->load(['cauHoi.phuongAnTraLoi']);
 
-        return view('admin.mau-khao-sat.edit', compact('mauKhaoSat', 'doiTuongs'));
+        return view('admin.mau-khao-sat.edit', compact('mauKhaoSat'));
     }
 
     /**
@@ -138,9 +138,6 @@ class MauKhaoSatController extends Controller
             }
             $mauKhaoSat->cauHoi()->delete();
 
-            // Xóa nhóm câu hỏi
-            $mauKhaoSat->nhomCauHoi()->delete();
-
             // Xóa mẫu khảo sát
             $mauKhaoSat->delete();
 
@@ -166,7 +163,7 @@ class MauKhaoSatController extends Controller
             $newMau = $mauKhaoSat->replicate();
             $newMau->ten_mau = $mauKhaoSat->ten_mau . ' (Sao chép)';
             $newMau->trangthai = 'draft';
-            $newMau->nguoi_tao_id = auth()->id();
+            $newMau->nguoi_tao_id = Auth::user()->id;
             $newMau->created_at = now();
             $newMau->save();
 

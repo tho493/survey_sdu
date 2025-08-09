@@ -11,26 +11,15 @@ class MauKhaoSat extends Model
 
     protected $fillable = [
         'ten_mau',
-        'ma_doituong',
         'mota',
         'version',
         'trangthai',
         'nguoi_tao_id'
     ];
 
-    public function doiTuong()
-    {
-        return $this->belongsTo(DoiTuongKhaoSat::class, 'ma_doituong', 'ma_doituong');
-    }
-
     public function nguoiTao()
     {
         return $this->belongsTo(User::class, 'nguoi_tao_id');
-    }
-
-    public function nhomCauHoi()
-    {
-        return $this->hasMany(NhomCauHoi::class, 'mau_khaosat_id')->orderBy('thutu');
     }
 
     public function cauHoi()

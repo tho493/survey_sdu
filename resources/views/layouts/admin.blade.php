@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 
 <head>
     <meta charset="UTF-8">
@@ -338,12 +338,6 @@
                     <a href="{{ route('admin.bao-cao.index') }}"
                         class="{{ request()->routeIs('admin.bao-cao.*') ? 'active' : '' }}">
                         <i class="bi bi-graph-up-arrow"></i> <span>Báo cáo</span>
-                    </a>
-                </li>
-                <li>
-                    <a href="{{ route('admin.doi-tuong.index') }}"
-                        class="{{ request()->routeIs('admin.doi-tuong.*') ? 'active' : '' }}">
-                        <i class="bi bi-people-fill"></i> <span>Đối tượng KS</span>
                     </a>
                 </li>
                 <li>

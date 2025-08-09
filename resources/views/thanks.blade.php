@@ -22,7 +22,6 @@
             padding: 50px;
             text-align: center;
             box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
-            max-width: 500px;
             animation: fadeInUp 0.6s ease-out;
         }
 
@@ -64,9 +63,6 @@
             <p class="lead mb-4">
                 Chúng tôi đã nhận được phản hồi của bạn.
             </p>
-            <p class="text-muted mb-4">
-                Ý kiến của bạn rất quan trọng và sẽ giúp chúng tôi cải thiện chất lượng dịch vụ.
-            </p>
             <div class="d-grid gap-2 d-md-block">
                 <a href="{{ route('khao-sat.index') }}" class="btn btn-primary">
                     <i class="bi bi-house"></i> Về trang chủ
@@ -79,7 +75,6 @@
             <hr class="my-4">
 
             <p class="small text-muted mb-0">
-                Mã xác nhận: #{{ strtoupper(uniqid()) }}<br>
                 Thời gian: {{ now()->format('d/m/Y H:i:s') }}
             </p>
         </div>

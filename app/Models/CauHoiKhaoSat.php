@@ -10,7 +10,6 @@ class CauHoiKhaoSat extends Model
 
     protected $fillable = [
         'mau_khaosat_id',
-        'nhom_cauhoi_id',
         'noidung_cauhoi',
         'loai_cauhoi',
         'batbuoc',
@@ -29,11 +28,6 @@ class CauHoiKhaoSat extends Model
     public function mauKhaoSat()
     {
         return $this->belongsTo(MauKhaoSat::class, 'mau_khaosat_id');
-    }
-
-    public function nhomCauHoi()
-    {
-        return $this->belongsTo(NhomCauHoi::class, 'nhom_cauhoi_id');
     }
 
     public function phuongAnTraLoi()

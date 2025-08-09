@@ -53,21 +53,6 @@ CREATE TABLE IF NOT EXISTS `taikhoan` (
 --     REFERENCES `taikhoan` (`id`) ON DELETE CASCADE
 -- ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- Bảng đối tượng khảo sát
-CREATE TABLE IF NOT EXISTS `doituong_khaosat` (
-  `id` INT(11) NOT NULL AUTO_INCREMENT,
-  `ma_doituong` VARCHAR(20) NOT NULL UNIQUE,
-  `ten_doituong` VARCHAR(255) NOT NULL,
-  `mota` TEXT,
-  `loai_doituong` ENUM('sinhvien', 'giangvien', 'nhanvien', 'doanhnghiep', 'khac') DEFAULT 'khac',
-  `trangthai` TINYINT(1) DEFAULT 1,
-  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` DATETIME ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `idx_ma_doituong` (`ma_doituong`),
-  KEY `idx_loai_doituong` (`loai_doituong`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
 -- Bảng năm học
 CREATE TABLE IF NOT EXISTS `namhoc` (
   `id` INT(11) NOT NULL AUTO_INCREMENT,
@@ -85,7 +70,6 @@ CREATE TABLE IF NOT EXISTS `namhoc` (
 CREATE TABLE IF NOT EXISTS `mau_khaosat` (
   `id` INT(11) NOT NULL AUTO_INCREMENT,
   `ten_mau` VARCHAR(255) NOT NULL,
-  `ma_doituong` VARCHAR(20) NOT NULL,
   `mota` TEXT,
   `version` INT DEFAULT 1,
   `trangthai` ENUM('draft', 'active', 'inactive') DEFAULT 'draft',
@@ -93,34 +77,16 @@ CREATE TABLE IF NOT EXISTS `mau_khaosat` (
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   `updated_at` DATETIME ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  KEY `idx_ma_doituong` (`ma_doituong`),
   KEY `idx_trangthai` (`trangthai`),
   KEY `idx_nguoi_tao` (`nguoi_tao_id`),
-  CONSTRAINT `fk_mau_doituong` FOREIGN KEY (`ma_doituong`) 
-    REFERENCES `doituong_khaosat` (`ma_doituong`),
   CONSTRAINT `fk_mau_nguoitao` FOREIGN KEY (`nguoi_tao_id`) 
     REFERENCES `taikhoan` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
--- Bảng nhóm câu hỏi
-CREATE TABLE IF NOT EXISTS `nhom_cauhoi` (
-  `id` INT(11) NOT NULL AUTO_INCREMENT,
-  `mau_khaosat_id` INT(11) NOT NULL,
-  `ten_nhom` VARCHAR(255) NOT NULL,
-  `mota` TEXT,
-  `thutu` INT DEFAULT 0,
-  `hienthi_tennhom` TINYINT(1) DEFAULT 1,
-  PRIMARY KEY (`id`),
-  KEY `idx_mau_khaosat` (`mau_khaosat_id`),
-  CONSTRAINT `fk_nhom_mau` FOREIGN KEY (`mau_khaosat_id`) 
-    REFERENCES `mau_khaosat` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Bảng câu hỏi khảo sát
 CREATE TABLE IF NOT EXISTS `cauhoi_khaosat` (
   `id` INT(11) NOT NULL AUTO_INCREMENT,
   `mau_khaosat_id` INT(11) NOT NULL,
-  `nhom_cauhoi_id` INT(11),
   `noidung_cauhoi` TEXT NOT NULL,
   `loai_cauhoi` ENUM('single_choice', 'multiple_choice', 'text', 'likert', 'rating', 'date', 'number') DEFAULT 'single_choice',
   `batbuoc` TINYINT(1) DEFAULT 1,
@@ -128,14 +94,13 @@ CREATE TABLE IF NOT EXISTS `cauhoi_khaosat` (
   `cau_dieukien_id` INT(11), -- Câu hỏi phụ thuộc
   `dieukien_hienthi` JSON, -- Điều kiện hiển thị câu hỏi
   `trangthai` TINYINT(1) DEFAULT 1,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_mau_khaosat` (`mau_khaosat_id`),
-  KEY `idx_nhom_cauhoi` (`nhom_cauhoi_id`),
   KEY `idx_cau_dieukien` (`cau_dieukien_id`),
   CONSTRAINT `fk_cauhoi_mau` FOREIGN KEY (`mau_khaosat_id`) 
-    REFERENCES `mau_khaosat` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `fk_cauhoi_nhom` FOREIGN KEY (`nhom_cauhoi_id`) 
-    REFERENCES `nhom_cauhoi` (`id`) ON DELETE SET NULL
+    REFERENCES `mau_khaosat` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Bảng phương án trả lời
@@ -146,6 +111,8 @@ CREATE TABLE IF NOT EXISTS `phuongan_traloi` (
   `giatri` VARCHAR(50),
   `thutu` INT DEFAULT 0,
   `cho_nhap_khac` TINYINT(1) DEFAULT 0,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_cauhoi` (`cauhoi_id`),
   CONSTRAINT `fk_phuongan_cauhoi` FOREIGN KEY (`cauhoi_id`) 
@@ -164,6 +131,7 @@ CREATE TABLE IF NOT EXISTS `dot_khaosat` (
   `mota` TEXT,
   `nguoi_tao_id` INT(11),
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_mau_khaosat` (`mau_khaosat_id`),
   KEY `idx_namhoc` (`namhoc_id`),
@@ -187,6 +155,8 @@ CREATE TABLE IF NOT EXISTS `phieu_khaosat` (
   `thoigian_hoanthanh` DATETIME,
   `ip_address` VARCHAR(45),
   `user_agent` TEXT,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_dot_khaosat` (`dot_khaosat_id`),
   KEY `idx_ma_nguoi_traloi` (`ma_nguoi_traloi`),
@@ -207,6 +177,8 @@ CREATE TABLE IF NOT EXISTS `phieu_khaosat_chitiet` (
   `giatri_date` DATE,
   `giatri_json` JSON, -- Cho multiple choice
   `thoigian` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_phieu` (`phieu_khaosat_id`),
   KEY `idx_cauhoi` (`cauhoi_id`),
@@ -246,6 +218,7 @@ CREATE TABLE IF NOT EXISTS `cau_hinh_dich_vu` (
   `giatri` TEXT,
   `mota` VARCHAR(255),
   `nhom_cauhinh` VARCHAR(50),
+  `updated_at` DATETIME ON UPDATE CURRENT_TIMESTAMP
   PRIMARY KEY (`id`),
   KEY `idx_ma_cauhinh` (`ma_cauhinh`),
   KEY `idx_nhom` (`nhom_cauhinh`)
@@ -295,14 +268,12 @@ SELECT
   dk.denngay,
   dk.trangthai,
   mk.ten_mau,
-  dt.ten_doituong,
   COUNT(DISTINCT pk.id) AS tong_phieu,
   COUNT(DISTINCT CASE WHEN pk.trangthai = 'completed' THEN pk.id END) AS phieu_hoanthanh,
   ROUND(COUNT(DISTINCT CASE WHEN pk.trangthai = 'completed' THEN pk.id END) * 100.0 / 
         NULLIF(COUNT(DISTINCT pk.id), 0), 2) AS ty_le_hoanthanh
 FROM dot_khaosat dk
 LEFT JOIN mau_khaosat mk ON dk.mau_khaosat_id = mk.id
-LEFT JOIN doituong_khaosat dt ON mk.ma_doituong = dt.ma_doituong
 LEFT JOIN phieu_khaosat pk ON dk.id = pk.dot_khaosat_id
 GROUP BY dk.id;
 
@@ -310,12 +281,9 @@ GROUP BY dk.id;
 CREATE OR REPLACE VIEW v_khaosat_hoatdong AS
 SELECT 
   dk.*,
-  mk.ten_mau,
-  dt.ten_doituong,
-  dt.loai_doituong
+  mk.ten_mau
 FROM dot_khaosat dk
 JOIN mau_khaosat mk ON dk.mau_khaosat_id = mk.id
-JOIN doituong_khaosat dt ON mk.ma_doituong = dt.ma_doituong
 WHERE dk.trangthai = 'active'
   AND CURDATE() BETWEEN dk.tungay AND dk.denngay;
 
@@ -328,21 +296,15 @@ DELIMITER //
 -- Procedure tạo mẫu khảo sát mới
 CREATE PROCEDURE sp_TaoMauKhaoSat(
   IN p_ten_mau VARCHAR(255),
-  IN p_ma_doituong VARCHAR(20),
   IN p_mota TEXT,
   IN p_nguoi_tao_id INT
 )
 BEGIN
   DECLARE v_mau_id INT;
   
-  -- Kiểm tra đối tượng tồn tại
-  IF NOT EXISTS (SELECT 1 FROM doituong_khaosat WHERE ma_doituong = p_ma_doituong) THEN
-    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Mã đối tượng không tồn tại';
-  END IF;
-  
   -- Tạo mẫu khảo sát
-  INSERT INTO mau_khaosat (ten_mau, ma_doituong, mota, nguoi_tao_id)
-  VALUES (p_ten_mau, p_ma_doituong, p_mota, p_nguoi_tao_id);
+  INSERT INTO mau_khaosat (ten_mau, mota, nguoi_tao_id)
+  VALUES (p_ten_mau, p_mota, p_nguoi_tao_id);
   
   SET v_mau_id = LAST_INSERT_ID();
   
@@ -365,30 +327,17 @@ CREATE PROCEDURE sp_SaoChepMauKhaoSat(
 )
 BEGIN
   DECLARE v_mau_moi_id INT;
-  DECLARE v_ma_doituong VARCHAR(20);
-  
-  -- Lấy thông tin mẫu gốc
-  SELECT ma_doituong INTO v_ma_doituong
-  FROM mau_khaosat WHERE id = p_mau_goc_id;
   
   -- Tạo mẫu mới
-  INSERT INTO mau_khaosat (ten_mau, ma_doituong, mota, nguoi_tao_id)
-  SELECT p_ten_mau_moi, ma_doituong, CONCAT('Sao chép từ: ', ten_mau), p_nguoi_tao_id
+  INSERT INTO mau_khaosat (ten_mau, mota, nguoi_tao_id)
+  SELECT p_ten_mau_moi, CONCAT('Sao chép từ: ', ten_mau), p_nguoi_tao_id
   FROM mau_khaosat WHERE id = p_mau_goc_id;
   
   SET v_mau_moi_id = LAST_INSERT_ID();
   
-  -- Sao chép nhóm câu hỏi
-  INSERT INTO nhom_cauhoi (mau_khaosat_id, ten_nhom, mota, thutu, hienthi_tennhom)
-  SELECT v_mau_moi_id, ten_nhom, mota, thutu, hienthi_tennhom
-  FROM nhom_cauhoi WHERE mau_khaosat_id = p_mau_goc_id;
-  
   -- Sao chép câu hỏi và phương án
-  INSERT INTO cauhoi_khaosat (mau_khaosat_id, nhom_cauhoi_id, noidung_cauhoi, loai_cauhoi, batbuoc, thutu)
-  SELECT v_mau_moi_id, 
-         (SELECT id FROM nhom_cauhoi n2 WHERE n2.mau_khaosat_id = v_mau_moi_id 
-          AND n2.ten_nhom = (SELECT ten_nhom FROM nhom_cauhoi n1 WHERE n1.id = c.nhom_cauhoi_id)),
-         noidung_cauhoi, loai_cauhoi, batbuoc, thutu
+  INSERT INTO cauhoi_khaosat (mau_khaosat_id, noidung_cauhoi, loai_cauhoi, batbuoc, thutu)
+  SELECT v_mau_moi_id, noidung_cauhoi, loai_cauhoi, batbuoc, thutu
   FROM cauhoi_khaosat c WHERE mau_khaosat_id = p_mau_goc_id;
   
   -- Ghi log
@@ -634,15 +583,7 @@ DELIMITER ;
 
 -- Thêm tài khoản admin mặc định
 INSERT INTO `taikhoan` (`tendangnhap`, `matkhau`, `hoten`, `email`) VALUES
-('tho493', '2584fcf4f93b79886a1bba3c47dc5cac', 'Administrator', 'tho493@admin.com'),
-
--- Thêm đối tượng khảo sát mẫu
-INSERT INTO `doituong_khaosat` (`ma_doituong`, `ten_doituong`, `mota`, `loai_doituong`) VALUES
-('SV', 'Sinh viên', 'Khảo sát dành cho sinh viên', 'sinhvien'),
-('GV', 'Giảng viên', 'Khảo sát dành cho giảng viên', 'giangvien'),
-('NV', 'Nhân viên', 'Khảo sát dành cho nhân viên', 'nhanvien'),
-('DN', 'Doanh nghiệp', 'Khảo sát dành cho doanh nghiệp', 'doanhnghiep'),
-('SVTN', 'Sinh viên tốt nghiệp', 'Khảo sát sinh viên sau tốt nghiệp', 'sinhvien');
+('tho493', '2584fcf4f93b79886a1bba3c47dc5cac', 'Administrator', 'tho493@admin.com');
 
 -- Thêm năm học
 INSERT INTO `namhoc` (`namhoc`) VALUES
@@ -652,7 +593,6 @@ INSERT INTO `namhoc` (`namhoc`) VALUES
 
 -- Thêm cấu hình hệ thống
 INSERT INTO `cau_hinh_dich_vu` (`ma_cauhinh`, `giatri`, `mota`, `nhom_cauhinh`) VALUES
-
 -- Cấu hình email mặc định
 ('email_smtp_host', 'smtp.gmail.com', 'SMTP Host', 'email'),
 ('email_smtp_port', '587', 'SMTP Port', 'email'),
@@ -673,7 +613,7 @@ INSERT INTO `cau_hinh_dich_vu` (`ma_cauhinh`, `giatri`, `mota`, `nhom_cauhinh`) 
 ('email_notify_error', '1', 'Gửi thông báo khi có lỗi', 'email'),
 ('email_error_notify_to', 'admin@test.com', 'Email nhận thông báo lỗi', 'email'),
 ('email_test_mode', '0', 'Chế độ test email (1: bật, 0: tắt)', 'email'),
-('email_test_recipient', 'test@test.com', 'Email nhận khi ở chế độ test', 'email');
+('email_test_recipient', 'test@test.com', 'Email nhận khi ở chế độ test', 'email'),
 
 -- Config app
 ('system_name', 'Hệ thống khảo sát nội bộ', 'Hệ thống khảo sát nội bộ của trường Đại học Sao Đỏ', 'general'),

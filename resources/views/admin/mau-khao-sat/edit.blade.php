@@ -52,13 +52,6 @@
                         </div>
                         
                         <div class="mb-3">
-                            <label class="form-label">Đối tượng khảo sát</label>
-                            <input type="text" class="form-control" 
-                                   value="{{ $mauKhaoSat->doiTuong->ten_doituong ?? 'N/A' }}" disabled>
-                            <small class="text-muted">Không thể thay đổi đối tượng sau khi tạo mẫu</small>
-                        </div>
-                        
-                        <div class="mb-3">
                             <label class="form-label">Mô tả</label>
                             <textarea class="form-control @error('mota') is-invalid @enderror" 
                                       name="mota" rows="3">{{ old('mota', $mauKhaoSat->mota) }}</textarea>
@@ -183,10 +176,6 @@
                             <td><strong>{{ $mauKhaoSat->id }}</strong></td>
                         </tr>
                         <tr>
-                            <td class="text-muted">Đối tượng:</td>
-                            <td>{{ $mauKhaoSat->doiTuong->ten_doituong ?? 'N/A' }}</td>
-                        </tr>
-                        <tr>
                             <td class="text-muted">Số câu hỏi:</td>
                             <td>
                                 <span class="badge bg-info">{{ $mauKhaoSat->cauHoi->count() ?? 0 }}</span>
@@ -229,7 +218,7 @@
                         </button>
                         
                         @if($mauKhaoSat->trangthai == 'active' && ($mauKhaoSat->cauHoi->count() ?? 0) > 0)
-                            <a href="{{ route('dot-khao-sat.create') }}?mau_khaosat_id={{ $mauKhaoSat->id }}" 
+                            <a href="{{ route('admin.dot-khao-sat.create') }}?mau_khaosat_id={{ $mauKhaoSat->id }}" 
                                class="btn btn-success">
                                 <i class="bi bi-calendar-plus"></i> Tạo đợt khảo sát
                             </a>
@@ -248,27 +237,29 @@
 </div>
 
 <!-- Modal thêm/sửa câu hỏi -->
-<div class="modal fade" id="modalCauHoi" tabindex="-1">
+<div class="modal fade" id="modalCauHoi" tabindex="-1" aria-labelledby="modalTitle" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="modalTitle">Thêm câu hỏi</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <h5 class="modal-title" id="modalTitle">Thêm câu hỏi mới</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <form id="formCauHoi">
+                <div id="validation-errors" class="alert alert-danger d-none"></div> 
+                <!-- thông báo lỗi hiển thị ở id validation-errors -->
+
+                <form id="formCauHoi" onsubmit="saveCauHoi(event)">
                     <input type="hidden" id="cauHoiId">
                     
                     <div class="mb-3">
-                        <label class="form-label">Nội dung câu hỏi <span class="text-danger">*</span></label>
-                        <textarea class="form-control" id="noiDungCauHoi" rows="2" required 
-                                  placeholder="Nhập nội dung câu hỏi..."></textarea>
+                        <label for="noiDungCauHoi" class="form-label">Nội dung câu hỏi <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="noiDungCauHoi" rows="2" required placeholder="Nhập nội dung câu hỏi..."></textarea>
                     </div>
                     
                     <div class="row mb-3">
                         <div class="col-md-6">
-                            <label class="form-label">Loại câu hỏi</label>
-                            <select class="form-select" id="loaiCauHoi" onchange="changeLoaiCauHoi()">
+                            <label for="loaiCauHoi" class="form-label">Loại câu hỏi</label>
+                            <select class="form-select" id="loaiCauHoi" onchange="togglePhuongAnContainer()">
                                 <option value="single_choice">Chọn một</option>
                                 <option value="multiple_choice">Chọn nhiều</option>
                                 <option value="text">Văn bản</option>
@@ -279,34 +270,30 @@
                             </select>
                         </div>
                         <div class="col-md-3">
-                            <label class="form-label">Thứ tự</label>
+                            <label for="thuTu" class="form-label">Thứ tự</label>
                             <input type="number" class="form-control" id="thuTu" value="0" min="0">
                         </div>
-                        <div class="col-md-3">
-                            <label class="form-label">&nbsp;</label>
+                        <div class="col-md-3 d-flex align-items-end">
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" id="batBuoc" checked>
-                                <label class="form-check-label" for="batBuoc">
-                                    Bắt buộc trả lời
-                                </label>
+                                <label class="form-check-label" for="batBuoc">Bắt buộc trả lời</label>
                             </div>
                         </div>
                     </div>
                     
                     <div id="phuongAnContainer">
-                        <label class="form-label">Phương án trả lời</label>
+                        <label class="form-label">Phương án trả lời <span id="phuongAnRequired" class="text-danger">*</span></label>
                         <div id="danhSachPhuongAn">
-                            <!-- Phương án sẽ được thêm bằng JS -->
                         </div>
-                        <button type="button" class="btn btn-sm btn-secondary mt-2" onclick="addPhuongAn()">
+                        <button type="button" class="btn btn-sm btn-secondary mt-2" id="btnAddPhuongAn" onclick="addPhuongAn()">
                             <i class="bi bi-plus"></i> Thêm phương án
                         </button>
                     </div>
                 </form>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
-                <button type="button" class="btn btn-primary" onclick="saveCauHoi()">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                <button type="button" class="btn btn-primary" id="btnSaveCauHoi" onclick="saveCauHoi(event)">
                     <i class="bi bi-save"></i> Lưu câu hỏi
                 </button>
             </div>
@@ -349,118 +336,72 @@
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
 <script>
     const mauKhaoSatId = {{ $mauKhaoSat->id }};
-    let sortable = null;
-    
-    // Initialize sortable
-    document.addEventListener('DOMContentLoaded', function() {
-        const el = document.getElementById('danhSachCauHoi');
-        if (el) {
-            sortable = Sortable.create(el, {
-                handle: '.handle',
-                animation: 150,
-                onEnd: function(evt) {
-                    updateQuestionOrder();
-                }
-            });
-        }
-    });
-    
-    // Modal thêm câu hỏi
+    const modalCauHoi = new bootstrap.Modal(document.getElementById('modalCauHoi'));
+
     function showModalThemCauHoi() {
-        $('#modalTitle').text('Thêm câu hỏi');
-        $('#cauHoiId').val('');
-        $('#formCauHoi')[0].reset();
+        $('#modalTitle').text('Thêm câu hỏi mới');
+        $('#formCauHoi')[0].reset(); // Reset form
+        $('#cauHoiId').val('');      // Xóa ID câu hỏi cũ (nếu có)
         $('#batBuoc').prop('checked', true);
-        changeLoaiCauHoi();
-        $('#modalCauHoi').modal('show');
+        $('#validation-errors').addClass('d-none').html(''); // Ẩn thông báo lỗi
+        
+        togglePhuongAnContainer(); // Cập nhật hiển thị phương án
+        modalCauHoi.show();
     }
-    
-    // Thay đổi loại câu hỏi
-    function changeLoaiCauHoi() {
+
+    function togglePhuongAnContainer() {
         const loai = $('#loaiCauHoi').val();
         const container = $('#phuongAnContainer');
+        const isChoiceType = ['single_choice', 'multiple_choice', 'likert'].includes(loai);
         
-        if (['single_choice', 'multiple_choice'].includes(loai)) {
-            container.show();
-            $('#danhSachPhuongAn').html(`
-                <div class="input-group mb-2">
-                    <span class="input-group-text">1</span>
-                    <input type="text" class="form-control phuong-an" placeholder="Nhập phương án...">
-                    <button class="btn btn-outline-danger" type="button" onclick="removePhuongAn(this)">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                </div>
-                <div class="input-group mb-2">
-                    <span class="input-group-text">2</span>
-                    <input type="text" class="form-control phuong-an" placeholder="Nhập phương án...">
-                    <button class="btn btn-outline-danger" type="button" onclick="removePhuongAn(this)">
-                        <i class="bi bi-trash"></i>
-                    </button>
-                </div>
-            `);
-        } else if (loai === 'likert') {
-            container.show();
-            $('#danhSachPhuongAn').html(`
-                <div class="input-group mb-2">
-                    <span class="input-group-text">1</span>
-                    <input type="text" class="form-control phuong-an" value="Hoàn toàn không đồng ý" readonly>
-                </div>
-                <div class="input-group mb-2">
-                    <span class="input-group-text">2</span>
-                    <input type="text" class="form-control phuong-an" value="Không đồng ý" readonly>
-                </div>
-                <div class="input-group mb-2">
-                    <span class="input-group-text">3</span>
-                    <input type="text" class="form-control phuong-an" value="Trung lập" readonly>
-                </div>
-                <div class="input-group mb-2">
-                    <span class="input-group-text">4</span>
-                    <input type="text" class="form-control phuong-an" value="Đồng ý" readonly>
-                </div>
-                <div class="input-group mb-2">
-                    <span class="input-group-text">5</span>
-                    <input type="text" class="form-control phuong-an" value="Hoàn toàn đồng ý" readonly>
-                </div>
-            `);
-        } else {
-            container.hide();
+        container.toggle(isChoiceType);
+        
+        // Nếu là loại câu hỏi lựa chọn, tự động thêm phương án nếu chưa có
+        if (isChoiceType && $('#danhSachPhuongAn').is(':empty')) {
+            if (loai === 'likert') {
+                const likertOptions = [
+                    'Rất không hài lòng', 'Không hài lòng', 'Bình thường', 'Hài lòng', 'Rất hài lòng'
+                ];
+                likertOptions.forEach(option => addPhuongAn(option, true)); // Thêm và đánh dấu readonly
+            } else {
+                addPhuongAn('');
+                addPhuongAn('');
+            }
         }
     }
-    
-    // Thêm phương án
-    function addPhuongAn() {
+
+    function addPhuongAn(value = '', isReadonly = false) {
         const count = $('#danhSachPhuongAn .input-group').length + 1;
-        $('#danhSachPhuongAn').append(`
+        const readonlyAttr = isReadonly ? 'readonly' : '';
+        const html = `
             <div class="input-group mb-2">
                 <span class="input-group-text">${count}</span>
-                <input type="text" class="form-control phuong-an" placeholder="Nhập phương án...">
+                <input type="text" class="form-control phuong-an" value="${value}" ${readonlyAttr}>
                 <button class="btn btn-outline-danger" type="button" onclick="removePhuongAn(this)">
                     <i class="bi bi-trash"></i>
                 </button>
             </div>
-        `);
-        updatePhuongAnNumbers();
+        `;
+        $('#danhSachPhuongAn').append(html);
     }
-    
-    // Xóa phương án
+
     function removePhuongAn(btn) {
         if ($('#danhSachPhuongAn .input-group').length > 2) {
             $(btn).closest('.input-group').remove();
-            updatePhuongAnNumbers();
+            // Cập nhật lại số thứ tự
+            $('#danhSachPhuongAn .input-group').each(function(index) {
+                $(this).find('.input-group-text').text(index + 1);
+            });
         } else {
-            alert('Phải có ít nhất 2 phương án');
+            alert('Phải có ít nhất 2 phương án trả lời.');
         }
     }
-    
-    // Cập nhật số thứ tự phương án
-    function updatePhuongAnNumbers() {
-        $('#danhSachPhuongAn .input-group').each(function(index) {
-            $(this).find('.input-group-text').text(index + 1);
-        });
-    }
-    
-    // Lưu câu hỏi
-    function saveCauHoi() {
+
+    function saveCauHoi(event) {
+        event.preventDefault();
+        const btn = $('#btnSaveCauHoi');
+        btn.prop('disabled', true).html('<span class="spinner-border spinner-border-sm"></span> Đang lưu...');
+        
         const cauHoiId = $('#cauHoiId').val();
         const data = {
             noidung_cauhoi: $('#noiDungCauHoi').val(),
@@ -470,43 +411,41 @@
             phuong_an: []
         };
         
-        // Lấy phương án trả lời
         $('.phuong-an').each(function() {
-            if ($(this).val().trim()) {
+            if ($(this).val().trim() !== '') {
                 data.phuong_an.push($(this).val().trim());
             }
         });
         
-        // Validate
-        if (!data.noidung_cauhoi) {
-            alert('Vui lòng nhập nội dung câu hỏi');
-            return;
-        }
-        
-        if (['single_choice', 'multiple_choice', 'likert'].includes(data.loai_cauhoi) && data.phuong_an.length < 2) {
-            alert('Vui lòng nhập ít nhất 2 phương án');
-            return;
-        }
-        
-        // Submit
-        const url = cauHoiId 
-            ? `/cau-hoi/${cauHoiId}` 
-            : `/admin.mau-khao-sat/${mauKhaoSatId}/cau-hoi`;
+        const url = cauHoiId ? `/admin/cau-hoi/${cauHoiId}` : `/admin/mau-khao-sat/${mauKhaoSatId}/cau-hoi`;
         const method = cauHoiId ? 'PUT' : 'POST';
         
         $.ajax({
             url: url,
             method: method,
             data: data,
-            headers: {
-                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-            },
+            headers: { 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content') },
             success: function(response) {
-                $('#modalCauHoi').modal('hide');
-                location.reload();
+                if (response.success) {
+                    modalCauHoi.hide();
+                    location.reload(); // Tải lại trang để cập nhật danh sách
+                }
             },
             error: function(xhr) {
-                alert('Có lỗi xảy ra: ' + (xhr.responseJSON?.message || 'Vui lòng thử lại'));
+                btn.prop('disabled', false).html('<i class="bi bi-save"></i> Lưu câu hỏi');
+                
+                if (xhr.status === 422) {
+                    // Hiển thị lỗi validation
+                    let errorHtml = '<ul>';
+                    $.each(xhr.responseJSON.errors, function(key, value) {
+                        errorHtml += '<li>' + value[0] + '</li>';
+                    });
+                    errorHtml += '</ul>';
+                    $('#validation-errors').html(errorHtml).removeClass('d-none');
+                } else {
+                    // alert('Đã xảy ra lỗi không mong muốn. Vui lòng thử lại.');
+                    console.log(xhr.responseJSON);
+                }
             }
         });
     }
@@ -522,7 +461,7 @@
         if (!confirm('Bạn có chắc chắn muốn xóa câu hỏi này?')) return;
         
         $.ajax({
-            url: `/cau-hoi/${id}`,
+            url: `/admin/cau-hoi/${id}`,
             method: 'DELETE',
             headers: {
                 'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
@@ -547,7 +486,7 @@
         });
         
         $.ajax({
-            url: '/cau-hoi/update-order',
+            url: '/admin/cau-hoi/update-order',
             method: 'POST',
             data: { items: order },
             headers: {

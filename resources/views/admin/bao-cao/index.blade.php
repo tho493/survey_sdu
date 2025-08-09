@@ -88,7 +88,7 @@
         <div class="col-lg-4">
             <div class="card shadow">
                 <div class="card-header py-3">
-                    <h6 class="m-0 font-weight-bold text-primary">Tỷ lệ phiếu theo đối tượng</h6>
+                    <h6 class="m-0 font-weight-bold text-primary">Tỷ lệ phiếu theo mẫu khảo sát</h6>
                 </div>
                 <div class="card-body">
                     <div class="chart-pie" style="height: 300px;">
@@ -110,7 +110,7 @@
                     <thead class="table-light">
                         <tr>
                             <th>Tên đợt</th>
-                            <th>Đối tượng</th>
+                            <th>Tên mẫu khảo sát</th>
                             <th>Thời gian</th>
                             <th class="text-center">Số phiếu HT</th>
                             <th class="text-center">Trạng thái</th>
@@ -125,11 +125,14 @@
                                 </td>
                                 <td>
                                     <span class="badge bg-info">
-                                        {{ $dot->mauKhaoSat->doiTuong->ten_doituong ?? 'N/A' }}
+                                        {{ $dot->mauKhaoSat->ten_mau ?? 'N/A' }}
                                     </span>
                                 </td>
                                 <td>
-                                    <small>{{ $dot->tungay->format('d/m/Y') }} - {{ $dot->denngay->format('d/m/Y') }}</small>
+                                    <small>
+                                        {{ \Carbon\Carbon::parse($dot->tungay)->format('d/m/Y') }} - 
+                                        {{ \Carbon\Carbon::parse($dot->denngay)->format('d/m/Y') }}
+                                    </small>
                                 </td>
                                 <td class="text-center">
                                     <span class="badge bg-success rounded-pill">{{ $dot->phieu_hoan_thanh }}</span>
@@ -224,9 +227,9 @@ document.addEventListener('DOMContentLoaded', function() {
         new Chart(objectCtx, {
             type: 'doughnut',
             data: {
-                labels: {!! json_encode($thongKeDoiTuong->pluck('ten_doituong')) !!},
+                labels: {!! json_encode($thongKeMauKhaoSat->pluck('ten_mau')) !!},
                 datasets: [{
-                    data: {!! json_encode($thongKeDoiTuong->pluck('phieu_hoanthanh')) !!},
+                    data: {!! json_encode($thongKeMauKhaoSat->pluck('phieu_hoanthanh')) !!},
                     backgroundColor: ['#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', '#858796'],
                     hoverOffset: 4
                 }]

@@ -32,22 +32,6 @@
                             </div>
 
                             <div class="mb-3">
-                                <label class="form-label">Đối tượng khảo sát <span class="text-danger">*</span></label>
-                                <select class="form-select @error('ma_doituong') is-invalid @enderror" name="ma_doituong"
-                                    required>
-                                    <option value="">-- Chọn đối tượng --</option>
-                                    @foreach($doiTuongs as $dt)
-                                        <option value="{{ $dt->ma_doituong }}" {{ old('ma_doituong') == $dt->ma_doituong ? 'selected' : '' }}>
-                                            {{ $dt->ten_doituong }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                @error('ma_doituong')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-
-                            <div class="mb-3">
                                 <label class="form-label">Mô tả</label>
                                 <textarea class="form-control @error('mota') is-invalid @enderror" name="mota" rows="3"
                                     placeholder="Mô tả ngắn gọn về mục đích của mẫu khảo sát...">{{ old('mota') }}</textarea>
@@ -75,7 +59,6 @@
                         <h6 class="card-title">Hướng dẫn</h6>
                         <ol class="mb-0">
                             <li>Nhập tên mẫu khảo sát rõ ràng, dễ hiểu</li>
-                            <li>Chọn đúng đối tượng sẽ tham gia khảo sát</li>
                             <li>Sau khi tạo mẫu, bạn sẽ được chuyển đến trang thêm câu hỏi</li>
                             <li>Mẫu khảo sát mặc định ở trạng thái "Nháp"</li>
                         </ol>

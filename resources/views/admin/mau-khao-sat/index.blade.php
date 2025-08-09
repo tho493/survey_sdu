@@ -22,15 +22,29 @@
                                value="{{ request('search') }}">
                     </div>
                     <div class="col-md-4">
-                        <select class="form-select" name="ma_doituong">
-                            <option value="">-- Tất cả đối tượng --</option>
-                            @foreach($doiTuongs ?? [] as $dt)
-                                <option value="{{ $dt->ma_doituong }}" 
-                                    {{ request('ma_doituong') == $dt->ma_doituong ? 'selected' : '' }}>
-                                    {{ $dt->ten_doituong }}
-                                </option>
-                            @endforeach
-                        </select>
+                    <div class="row">
+                        <div class="col">
+                            <select class="form-select" name="nguoi_tao">
+                                <option value="">-- Người tạo --</option>
+                                @foreach($dsNguoiTao as $id => $ten)
+                                    <option value="{{ $id }}" {{ request('nguoi_tao') == $id ? 'selected' : '' }}>
+                                        {{ $ten }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col">
+                            <select class="form-select" name="trangthai">
+                                <option value="">-- Trạng thái --</option>
+                                <option value="active" {{ request('trangthai') == 'active' ? 'selected' : '' }}>Hoạt động</option>
+                                <option value="draft" {{ request('trangthai') == 'draft' ? 'selected' : '' }}>Nháp</option>
+                                <option value="closed" {{ request('trangthai') == 'closed' ? 'selected' : '' }}>Đã đóng</option>
+                            </select>
+                        </div>
+                        <div class="col">
+                            <input type="date" class="form-control" name="ngay_tao" value="{{ request('ngay_tao') }}" placeholder="Ngày tạo">
+                        </div>
+                    </div>
                     </div>
                     <div class="col-md-2">
                         <button type="submit" class="btn btn-primary w-100">
@@ -51,7 +65,6 @@
                         <tr>
                             <th>ID</th>
                             <th>Tên mẫu</th>
-                            <th>Đối tượng</th>
                             <th>Số câu hỏi</th>
                             <th>Trạng thái</th>
                             <th>Người tạo</th>
@@ -70,11 +83,6 @@
                                     @endif
                                 </td>
                                 <td>
-                                    <span class="badge bg-info">
-                                        {{ $mau->doiTuong->ten_doituong ?? 'N/A' }}
-                                    </span>
-                                </td>
-                                <td>
                                     <span class="badge bg-secondary">
                                         {{ $mau->cauHoi->count() }} câu
                                     </span>
@@ -91,7 +99,9 @@
                                             <span class="badge bg-secondary">Không hoạt động</span>
                                     @endswitch
                                 </td>
-                                <td>{{ $mau->nguoiTao->hoten ?? 'N/A' }}</td>
+                                <td value="{{ $mau->nguoiTao->id }}">
+                                    {{ $mau->nguoiTao->hoten ?? 'N/A' }} 
+                                </td>
                                 <td>{{ $mau->created_at ? $mau->created_at->format('d/m/Y') : '' }}</td>
                                 <td>
                                     <a href="{{ route('admin.mau-khao-sat.edit', $mau) }}" 

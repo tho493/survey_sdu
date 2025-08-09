@@ -12,7 +12,7 @@ class KhaoSatController extends Controller
 {
     public function index()
     {
-        $dotKhaoSats = DotKhaoSat::with(['mauKhaoSat.doiTuong'])
+        $dotKhaoSats = DotKhaoSat::with(['mauKhaoSat'])
             ->where('trangthai', 'active')
             ->whereDate('tungay', '<=', now())
             ->whereDate('denngay', '>=', now())
@@ -25,17 +25,26 @@ class KhaoSatController extends Controller
     {
         if (!$dotKhaoSat->isActive()) {
             return redirect()->route('khao-sat.index')
-                ->with('error', 'Đợt khảo sát không hoạt động');
+                ->with('error', 'Đợt khảo sát này hiện không hoạt động hoặc đã kết thúc.');
         }
 
-        $mauKhaoSat = $dotKhaoSat->mauKhaoSat->load([
-            'nhomCauHoi.cauHoi' => function ($query) {
-                $query->where('trangthai', 1)->orderBy('thutu');
-            },
-            'nhomCauHoi.cauHoi.phuongAnTraLoi' => function ($query) {
-                $query->orderBy('thutu');
-            }
-        ]);
+        $mauKhaoSat = $dotKhaoSat->mauKhaoSat()
+            ->with([
+                'cauHoi' => function ($query) {
+                    $query->where('trangthai', 1)->orderBy('thutu', 'asc');
+                },
+                'cauHoi.phuongAnTraLoi' => function ($query) {
+                    $query->orderBy('thutu', 'asc');
+                }
+            ])
+            ->first();
+
+        // dd($mauKhaoSat->toArray());
+
+        if (!$mauKhaoSat) {
+            return redirect()->route('khao-sat.index')
+                ->with('error', 'Không tìm thấy mẫu khảo sát cho đợt này.');
+        }
 
         return view('khao-sat.show', compact('dotKhaoSat', 'mauKhaoSat'));
     }
@@ -101,12 +110,12 @@ class KhaoSatController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
-            ], 500);
+            ], 400);
         }
     }
 
-    public function thankYou()
+    public function thanks()
     {
-        return view('khao-sat.thank-you');
+        return view('thanks');
     }
 }

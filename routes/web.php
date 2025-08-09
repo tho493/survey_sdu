@@ -11,6 +11,7 @@ require __DIR__ . '/admin.php';
 Route::get('/', function () {
     return redirect()->route('khao-sat.index');
 });
+Route::get('/thank-you', [KhaoSatController::class, 'thanks'])->name('thanks');
 
 // Authentication
 Route::get('login', [LoginController::class, 'showLoginForm'])->name('login');
@@ -22,5 +23,4 @@ Route::prefix('khao-sat')->name('khao-sat.')->group(function () {
     Route::get('/', [KhaoSatController::class, 'index'])->name('index');
     Route::get('/{dotKhaoSat}', [KhaoSatController::class, 'show'])->name('show');
     Route::post('/{dotKhaoSat}', [KhaoSatController::class, 'store'])->name('store');
-    Route::get('/thank-you', [KhaoSatController::class, 'thankYou'])->name('thank-you');
 });

@@ -38,6 +38,7 @@ class AdminDashboardController extends Controller
             ->take(5)
             ->get();
 
+        // dd($objectStats);
         return view('admin.dashboard.index', compact(
             'stats',
             'responseChart',
@@ -89,14 +90,13 @@ class AdminDashboardController extends Controller
     {
         return DB::table('dot_khaosat as dk')
             ->join('mau_khaosat as mk', 'dk.mau_khaosat_id', '=', 'mk.id')
-            ->join('doituong_khaosat as dt', 'mk.ma_doituong', '=', 'dt.ma_doituong')
             ->leftJoin('phieu_khaosat as pk', 'dk.id', '=', 'pk.dot_khaosat_id')
             ->select(
-                'dt.ten_doituong',
+                'mk.ten_mau',
                 DB::raw('COUNT(DISTINCT dk.id) as total_surveys'),
                 DB::raw('COUNT(pk.id) as total_responses')
             )
-            ->groupBy('dt.ma_doituong', 'dt.ten_doituong')
+            ->groupBy('mk.id', 'mk.ten_mau')
             ->get();
     }
 }

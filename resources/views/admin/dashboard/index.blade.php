@@ -115,7 +115,7 @@
             <div class="col-lg-4">
                 <div class="card shadow mb-4">
                     <div class="card-header py-3">
-                        <h6 class="m-0 font-weight-bold text-primary">Thống kê phiếu theo đối tượng</h6>
+                        <h6 class="m-0 font-weight-bold text-primary">Thống kê phiếu theo đợt khảo sát</h6>
                     </div>
                     <div class="card-body">
                         @if(isset($objectStats) && $objectStats->sum('total_responses') > 0)
@@ -127,14 +127,14 @@
                                 <table class="table table-sm">
                                     <thead>
                                         <tr>
-                                            <th>Đối tượng</th>
+                                            <th>Đợt khảo sát</th>
                                             <th class="text-end">Số phiếu</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         @foreach($objectStats as $item)
                                             <tr>
-                                                <td>{{ $item->ten_doituong }}</td>
+                                                <td>{{ $item->ten_mau }}</td>
                                                 <td class="text-end">
                                                     <strong>{{ number_format($item->total_responses) }}</strong>
                                                 </td>
@@ -268,7 +268,7 @@
         new Chart(objectCtx, {
             type: 'doughnut',
             data: {
-                labels: {!! json_encode($objectStats->pluck('ten_doituong')) !!},
+                labels: {!! json_encode($objectStats->pluck('ten_mau')) !!},
                 datasets: [{
                     data: {!! json_encode($objectStats->pluck('total_responses')) !!},
                     backgroundColor: [

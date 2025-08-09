@@ -8,12 +8,13 @@ use App\Models\MauKhaoSat;
 use App\Models\NamHoc;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
 
 class DotKhaoSatController extends Controller
 {
     public function index(Request $request)
     {
-        $query = DotKhaoSat::with(['mauKhaoSat.doiTuong', 'namHoc'])
+        $query = DotKhaoSat::with(['mauKhaoSat', 'namHoc'])
             ->withCount([
                 'phieuKhaoSat',
                 'phieuKhaoSat as phieu_hoan_thanh' => function ($q) {
@@ -43,7 +44,6 @@ class DotKhaoSatController extends Controller
     public function create()
     {
         $mauKhaoSats = MauKhaoSat::where('trangthai', 'active')
-            ->with('doiTuong')
             ->get();
         $namHocs = NamHoc::where('trangthai', 1)->orderBy('namhoc', 'desc')->get();
 
@@ -78,13 +78,13 @@ class DotKhaoSatController extends Controller
                 'denngay' => $validated['denngay'],
                 'mota' => $validated['mota'],
                 'trangthai' => 'draft',
-                'nguoi_tao_id' => auth()->user()->tendangnhap
+                'nguoi_tao_id' => Auth::user()->id
             ]);
 
             DB::commit();
 
             return redirect()
-                ->route('dot-khao-sat.show', $dotKhaoSat)
+                ->route('admin.dot-khao-sat.show', $dotKhaoSat)
                 ->with('success', 'Tạo đợt khảo sát thành công');
 
         } catch (\Exception $e) {
@@ -96,7 +96,7 @@ class DotKhaoSatController extends Controller
 
     public function show(DotKhaoSat $dotKhaoSat)
     {
-        $dotKhaoSat->load(['mauKhaoSat.doiTuong', 'namHoc']);
+        $dotKhaoSat->load(['mauKhaoSat', 'namHoc']);
 
         // Thống kê
         $thongKe = [
@@ -147,11 +147,11 @@ class DotKhaoSatController extends Controller
     {
         // Chỉ cho phép sửa khi ở trạng thái draft
         if ($dotKhaoSat->trangthai !== 'draft') {
-            return redirect()->route('dot-khao-sat.show', $dotKhaoSat)
+            return redirect()->route('admin.dot-khao-sat.show', $dotKhaoSat)
                 ->with('error', 'Không thể sửa đợt khảo sát đã kích hoạt');
         }
 
-        $mauKhaoSats = MauKhaoSat::where('trangthai', 'active')->with('doiTuong')->get();
+        $mauKhaoSats = MauKhaoSat::where('trangthai', 'active')->get();
         $namHocs = NamHoc::where('trangthai', 1)->orderBy('namhoc', 'desc')->get();
 
         return view('admin.dot-khao-sat.edit', compact('dotKhaoSat', 'mauKhaoSats', 'namHocs'));
@@ -175,7 +175,7 @@ class DotKhaoSatController extends Controller
 
         $dotKhaoSat->update($validated);
 
-        return redirect()->route('dot-khao-sat.show', $dotKhaoSat)
+        return redirect()->route('admin.dot-khao-sat.show', $dotKhaoSat)
             ->with('success', 'Cập nhật đợt khảo sát thành công');
     }
 
@@ -192,7 +192,7 @@ class DotKhaoSatController extends Controller
 
         $dotKhaoSat->delete();
 
-        return redirect()->route('dot-khao-sat.index')
+        return redirect()->route('admin.dot-khao-sat.index')
             ->with('success', 'Xóa đợt khảo sát thành công');
     }
 }

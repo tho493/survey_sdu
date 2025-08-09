@@ -38,7 +38,7 @@
                                 @foreach($mauKhaoSats as $mau)
                                     <option value="{{ $mau->id }}" 
                                         {{ old('mau_khaosat_id', $dotKhaoSat->mau_khaosat_id) == $mau->id ? 'selected' : '' }}>
-                                        {{ $mau->ten_mau }} ({{ $mau->doiTuong->ten_doituong ?? 'N/A' }})
+                                        {{ $mau->ten_mau }}
                                     </option>
                                 @endforeach
                             </select>

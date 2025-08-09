@@ -218,7 +218,8 @@ class LogController extends Controller
 
         if ($validated['type'] == 'activity') {
             // Xóa log hoạt động
-            $deleted = LichSuThayDoi::whereDate('thoigian', '<', $validated['before_date'])->delete();
+            // Sử dụng where để so sánh ngày (không dùng whereDate vì trường thoigian có thể là datetime)
+            $deleted = LichSuThayDoi::where('thoigian', '<', $validated['before_date'] . ' 00:00:00')->delete();
 
             return back()->with('success', "Đã xóa {$deleted} bản ghi log hoạt động");
         } else {
