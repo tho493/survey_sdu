@@ -241,7 +241,7 @@
                     @endif
 
                     <div class="mb-4 flex justify-center">
-                        <div class="g-recaptcha" data-sitekey="{{ env('RECAPTCHA_SITE_KEY') }}"></div>
+                        <div class="g-recaptcha" data-sitekey="{{ env('RECAPTCHA_SITE_KEY') }}"></div> 
                     </div>
 
                     <!-- Submit button -->

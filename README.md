@@ -92,7 +92,7 @@ Trước khi cài đặt, bạn cần đảm bảo môi trường PHP đã đư�
 1.  **Clone repository:**
 
     ```sh
-    git clone [URL_REPOSITORY_CUA_BAN] he-thong-khao-sat
+    git clone https://github.com/tho493/survey_sdu.git he-thong-khao-sat
     cd he-thong-khao-sat
     ```
 
