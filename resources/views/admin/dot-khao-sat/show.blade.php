@@ -41,7 +41,7 @@
                                     $daysLeft = now()->diffInDays($dotKhaoSat->denngay, false);
                                 @endphp
                                 @if($dotKhaoSat->trangthai == 'active' && $daysLeft >= 0)
-                                    <span class="badge bg-warning ms-2">Còn {{ $daysLeft }} ngày</span>
+                                    <span class="badge bg-warning ms-2">Còn {{ number_format($daysLeft, 1) }} ngày</span>
                                 @endif
                             </td>
                         </tr>

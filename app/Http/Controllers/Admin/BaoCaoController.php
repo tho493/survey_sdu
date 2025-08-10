@@ -67,6 +67,30 @@ class BaoCaoController extends Controller
         ));
     }
 
+    private function getThoiGianTraLoiTrungBinh(DotKhaoSat $dotKhaoSat)
+    {
+        $avgSeconds = $dotKhaoSat->phieuKhaoSat()
+            ->where('trangthai', 'completed')
+            ->whereNotNull('thoigian_hoanthanh')
+            ->whereNotNull('thoigian_batdau')
+            ->selectRaw('AVG(TIMESTAMPDIFF(SECOND, thoigian_batdau, thoigian_hoanthanh)) as avg_time')
+            ->value('avg_time');
+
+        if ($avgSeconds === null || $avgSeconds <= 0) {
+            return 'N/A';
+        }
+
+        $minutes = floor($avgSeconds / 60);
+        $seconds = round($avgSeconds % 60);
+
+        if ($minutes == 0) {
+            return "{$seconds} giây";
+        }
+
+        return "{$minutes} phút {$seconds} giây";
+    }
+
+
     public function dotKhaoSat(DotKhaoSat $dotKhaoSat)
     {
         $dotKhaoSat->load(['mauKhaoSat.cauHoi.phuongAnTraLoi']);
@@ -75,8 +99,7 @@ class BaoCaoController extends Controller
         $tongQuan = [
             'tong_phieu' => $dotKhaoSat->phieuKhaoSat()->count(),
             'phieu_hoan_thanh' => $dotKhaoSat->phieuKhaoSat()->where('trangthai', 'completed')->count(),
-            'ty_le' => $dotKhaoSat->getTyLeHoanThanh(),
-            'thoi_gian_tb' => $this->getThoiGianTraLoiTrungBinh($dotKhaoSat)
+            'ty_le' => $dotKhaoSat->getTyLeHoanThanh()
         ];
 
         // Thống kê từng câu hỏi
@@ -104,78 +127,121 @@ class BaoCaoController extends Controller
 
     private function thongKeCauHoi($dotKhaoSatId, $cauHoi)
     {
-        $result = [
-            'type' => 'text',
-            'data' => []
-        ];
+        $completedSurveyIds = DB::table('phieu_khaosat')
+            ->where('dot_khaosat_id', $dotKhaoSatId)
+            ->where('trangthai', 'completed')
+            ->pluck('id');
 
-        if (in_array($cauHoi->loai_cauhoi, ['single_choice', 'multiple_choice', 'likert', 'rating'])) {
-            // Thống kê cho câu hỏi lựa chọn
-            $data = DB::table('phieu_khaosat_chitiet as pkc')
-                ->join('phieu_khaosat as pk', 'pkc.phieu_khaosat_id', '=', 'pk.id')
-                ->leftJoin('phuongan_traloi as pt', 'pkc.phuongan_id', '=', 'pt.id')
-                ->where('pk.dot_khaosat_id', $dotKhaoSatId)
-                ->where('pkc.cauhoi_id', $cauHoi->id)
-                ->where('pk.trangthai', 'completed')
-                ->groupBy('pkc.phuongan_id', 'pt.noidung')
-                ->select(
-                    'pt.noidung',
-                    'pkc.phuongan_id',
-                    DB::raw('COUNT(*) as so_luong')
-                )
-                ->orderBy('pkc.phuongan_id')
-                ->get();
-
-            // Tính tổng để tính phần trăm
-            $total = $data->sum('so_luong');
-
-            // Thêm phần trăm
-            $data = $data->map(function ($item) use ($total) {
-                $item->ty_le = $total > 0 ? round(($item->so_luong / $total) * 100, 2) : 0;
-                return $item;
+        if ($completedSurveyIds->isEmpty() && in_array($cauHoi->loai_cauhoi, ['single_choice', 'multiple_choice', 'likert', 'rating'])) {
+            $data = $cauHoi->phuongAnTraLoi->map(function ($item) {
+                return (object) [
+                    'noidung' => $item->noidung,
+                    'so_luong' => 0,
+                    'ty_le' => 0,
+                ];
             });
-
-            $result['type'] = 'chart';
-            $result['data'] = $data;
-            $result['total'] = $total;
-
-        } elseif ($cauHoi->loai_cauhoi == 'text') {
-            // Lấy một số câu trả lời mẫu cho câu hỏi text
-            $data = DB::table('phieu_khaosat_chitiet as pkc')
-                ->join('phieu_khaosat as pk', 'pkc.phieu_khaosat_id', '=', 'pk.id')
-                ->where('pk.dot_khaosat_id', $dotKhaoSatId)
-                ->where('pkc.cauhoi_id', $cauHoi->id)
-                ->where('pk.trangthai', 'completed')
-                ->whereNotNull('pkc.giatri_text')
-                ->where('pkc.giatri_text', '!=', '')
-                ->select('pkc.giatri_text')
-                ->limit(20)
-                ->get();
-
-            $result['type'] = 'text';
-            $result['data'] = $data;
-            $result['total'] = DB::table('phieu_khaosat_chitiet as pkc')
-                ->join('phieu_khaosat as pk', 'pkc.phieu_khaosat_id', '=', 'pk.id')
-                ->where('pk.dot_khaosat_id', $dotKhaoSatId)
-                ->where('pkc.cauhoi_id', $cauHoi->id)
-                ->where('pk.trangthai', 'completed')
-                ->whereNotNull('pkc.giatri_text')
-                ->where('pkc.giatri_text', '!=', '')
-                ->count();
+            return ['type' => 'chart', 'data' => $data, 'total' => 0];
         }
 
-        return $result;
-    }
+        // Tạo câu query cơ sở
+        $baseQuery = DB::table('phieu_khaosat_chitiet')
+            ->where('phieu_khaosat_chitiet.cauhoi_id', $cauHoi->id)
+            ->whereIn('phieu_khaosat_id', $completedSurveyIds);
 
-    private function getThoiGianTraLoiTrungBinh($dotKhaoSat)
-    {
-        $avg = $dotKhaoSat->phieuKhaoSat()
-            ->where('trangthai', 'completed')
-            ->whereNotNull('thoigian_hoanthanh')
-            ->selectRaw('AVG(TIMESTAMPDIFF(MINUTE, thoigian_batdau, thoigian_hoanthanh)) as avg_time')
-            ->first();
+        switch ($cauHoi->loai_cauhoi) {
 
-        return $avg && $avg->avg_time ? round($avg->avg_time) . ' phút' : 'N/A';
+            case 'single_choice':
+            case 'multiple_choice':
+            case 'likert':
+                $answeredCounts = (clone $baseQuery)
+                    ->groupBy('phuongan_id')
+                    ->select(
+                        'phuongan_id',
+                        DB::raw('COUNT(id) as so_luong')
+                    )
+                    ->pluck('so_luong', 'phuongan_id');
+
+                $totalResponses = $answeredCounts->sum();
+
+                $data = $cauHoi->phuongAnTraLoi->map(function ($phuongAn) use ($answeredCounts, $totalResponses) {
+                    $soLuong = $answeredCounts->get($phuongAn->id, 0);
+                    return (object) [
+                        'noidung' => $phuongAn->noidung,
+                        'so_luong' => $soLuong,
+                        'ty_le' => $totalResponses > 0 ? round(($soLuong / $totalResponses) * 100, 2) : 0,
+                    ];
+                });
+
+                return [
+                    'type' => 'chart',
+                    'data' => $data,
+                    'total' => $totalResponses,
+                ];
+
+            case 'text':
+                $totalResponses = (clone $baseQuery)->whereNotNull('giatri_text')->where('giatri_text', '!=', '')->count();
+                $data = (clone $baseQuery)
+                    ->whereNotNull('giatri_text')
+                    ->where('giatri_text', '!=', '')
+                    ->select('giatri_text')
+                    ->limit(20)
+                    ->pluck('giatri_text');
+
+                return ['type' => 'text', 'data' => $data, 'total' => $totalResponses];
+
+            case 'rating':
+                $answeredCounts = (clone $baseQuery)
+                    ->whereNotNull('giatri_number')
+                    ->groupBy('giatri_number')
+                    ->select(
+                        'giatri_number',
+                        DB::raw('COUNT(id) as so_luong')
+                    )
+                    ->pluck('so_luong', 'giatri_number');
+
+                $totalResponses = $answeredCounts->sum();
+                $normalizedAnsweredCounts = collect();
+                foreach ($answeredCounts as $key => $value) {
+                    $intKey = (int) $key;
+                    $normalizedAnsweredCounts->put($intKey, $value);
+                }
+                $data = collect([1, 2, 3, 4, 5])->map(function ($rating) use ($normalizedAnsweredCounts, $totalResponses) {
+                    $soLuong = $normalizedAnsweredCounts->get($rating, 0);
+                    return (object) [
+                        'noidung' => "{$rating} sao",
+                        'so_luong' => $soLuong,
+                        'ty_le' => $totalResponses > 0 ? round(($soLuong / $totalResponses) * 100, 2) : 0,
+                    ];
+                });
+
+                return [
+                    'type' => 'chart',
+                    'data' => $data,
+                    'total' => $totalResponses,
+                ];
+
+            case 'number':
+                $stats = (clone $baseQuery)
+                    ->whereNotNull('giatri_number')
+                    ->selectRaw('
+                        COUNT(id) as total,
+                        MIN(giatri_number) as min,
+                        MAX(giatri_number) as max,
+                        AVG(giatri_number) as avg,
+                        STDDEV(giatri_number) as stddev
+                    ')->first();
+
+                return [
+                    'type' => 'number_stats',
+                    'data' => $stats,
+                    'total' => $stats->total ?? 0,
+                ];
+
+            default:
+                $totalResponses = (clone $baseQuery)->count();
+                $data = (clone $baseQuery)->limit(20)->get();
+                return ['type' => 'list', 'data' => $data, 'total' => $totalResponses];
+        }
     }
 
     private function getThongKeThang()
@@ -228,7 +294,7 @@ class BaoCaoController extends Controller
             ];
             $thongKeCauHoi = [];
             foreach ($dotKhaoSat->mauKhaoSat->cauHoi as $cauHoi) {
-                $thongKeCauHoi[$cauHoi->id] = $this->thongKeTungCauHoi($dotKhaoSat->id, $cauHoi);
+                $thongKeCauHoi[$cauHoi->id] = $this->thongKeCauHoi($dotKhaoSat->id, $cauHoi);
             }
 
             // Tải view PDF với dữ liệu
@@ -242,103 +308,5 @@ class BaoCaoController extends Controller
         }
 
         return back()->with('error', 'Định dạng xuất không hợp lệ.');
-    }
-
-    private function thongKeTungCauHoi($dotKhaoSatId, $cauHoi)
-    {
-        // Lấy danh sách ID của các phiếu đã hoàn thành để đảm bảo chỉ thống kê trên dữ liệu hợp lệ
-        $completedSurveyIds = DB::table('phieu_khaosat')
-            ->where('dot_khaosat_id', $dotKhaoSatId)
-            ->where('trangthai', 'completed')
-            ->pluck('id');
-
-        // Nếu không có phiếu nào hoàn thành, trả về kết quả rỗng
-        if ($completedSurveyIds->isEmpty()) {
-            return ['type' => 'empty', 'data' => collect(), 'total' => 0];
-        }
-
-        // Tạo câu query cơ sở
-        $baseQuery = DB::table('phieu_khaosat_chitiet')
-            ->where('phieu_khaosat_chitiet.cauhoi_id', $cauHoi->id)
-            ->whereIn('phieu_khaosat_id', $completedSurveyIds);
-
-        // Xử lý tùy theo loại câu hỏi
-        switch ($cauHoi->loai_cauhoi) {
-
-            case 'single_choice':
-            case 'multiple_choice':
-            case 'likert':
-            case 'rating':
-
-                // Lấy dữ liệu đếm số lượt chọn cho mỗi phương án
-                $data = (clone $baseQuery)
-                    ->leftJoin('phuongan_traloi as pa', 'phieu_khaosat_chitiet.phuongan_id', '=', 'pa.id')
-                    ->groupBy('phieu_khaosat_chitiet.phuongan_id', 'pa.noidung')
-                    ->select(
-                        'pa.noidung',
-                        DB::raw('COUNT(phieu_khaosat_chitiet.id) as so_luong')
-                    )
-                    ->orderBy('so_luong', 'desc')
-                    ->get();
-
-                // Tính tổng số lượt trả lời cho câu hỏi này
-                $totalResponses = $data->sum('so_luong');
-
-                // Thêm tỷ lệ phần trăm vào mỗi phương án
-                $data = $data->map(function ($item) use ($totalResponses) {
-                    $item->ty_le = $totalResponses > 0 ? round(($item->so_luong / $totalResponses) * 100, 2) : 0;
-                    // Đảm bảo 'noidung' không bị null (trường hợp dữ liệu rác)
-                    $item->noidung = $item->noidung ?? 'Không xác định';
-                    return $item;
-                });
-
-                return [
-                    'type' => 'chart', // Dữ liệu phù hợp để vẽ biểu đồ
-                    'data' => $data,
-                    'total' => $totalResponses,
-                ];
-
-            case 'text':
-                // Lấy các câu trả lời dạng văn bản
-                $data = (clone $baseQuery)
-                    ->whereNotNull('giatri_text')
-                    ->where('giatri_text', '!=', '')
-                    ->select('giatri_text')
-                    ->limit(20) // Giới hạn 20 câu trả lời mẫu để hiển thị
-                    ->pluck('giatri_text'); // Chỉ lấy cột giatri_text
-
-                return [
-                    'type' => 'text', // Dữ liệu dạng danh sách văn bản
-                    'data' => $data,
-                    'total' => (clone $baseQuery)->whereNotNull('giatri_text')->where('giatri_text', '!=', '')->count(),
-                ];
-
-            case 'number':
-                // Thống kê cho câu hỏi dạng số (min, max, avg)
-                $stats = (clone $baseQuery)
-                    ->whereNotNull('giatri_number')
-                    ->selectRaw('
-                        COUNT(id) as total,
-                        MIN(giatri_number) as min,
-                        MAX(giatri_number) as max,
-                        AVG(giatri_number) as avg,
-                        STDDEV(giatri_number) as stddev
-                    ')->first();
-
-                return [
-                    'type' => 'number_stats',
-                    'data' => $stats,
-                    'total' => $stats->total ?? 0,
-                ];
-
-            default:
-                // Các loại khác (date, etc.) trả về dạng danh sách
-                $data = (clone $baseQuery)->limit(20)->get();
-                return [
-                    'type' => 'list',
-                    'data' => $data,
-                    'total' => (clone $baseQuery)->count(),
-                ];
-        }
     }
 }

@@ -69,20 +69,67 @@ class CauHoiController extends Controller
         }
     }
 
+    public function show(CauHoiKhaoSat $cauHoi)
+    {
+        $cauHoi->load([
+            'phuongAnTraLoi' => function ($query) {
+                $query->orderBy('thutu', 'asc');
+            }
+        ]);
+
+        return response()->json($cauHoi);
+    }
+
     public function update(Request $request, CauHoiKhaoSat $cauHoi)
     {
         $validated = $request->validate([
-            'noidung_cauhoi' => 'required',
+            'noidung_cauhoi' => 'required|string',
+            'loai_cauhoi' => 'required|in:single_choice,multiple_choice,text,likert,rating,date,number',
             'batbuoc' => 'boolean',
-            'thutu' => 'integer'
+            'thutu' => 'integer|min:0',
+            'phuong_an' => 'sometimes|array|min:2',
+            'phuong_an.*' => 'required|string|max:500'
         ]);
 
-        $cauHoi->update($validated);
+        DB::beginTransaction();
+        try {
+            // Cập nhật thông tin chính của câu hỏi
+            $cauHoi->update([
+                'noidung_cauhoi' => $validated['noidung_cauhoi'],
+                'loai_cauhoi' => $validated['loai_cauhoi'],
+                'batbuoc' => $validated['batbuoc'] ?? true,
+                'thutu' => $validated['thutu']
+            ]);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Cập nhật câu hỏi thành công'
-        ]);
+            // Xóa các phương án cũ và tạo lại nếu có phương án mới
+            if (isset($validated['phuong_an'])) {
+                $cauHoi->phuongAnTraLoi()->delete(); // Xóa hết phương án cũ
+
+                $phuongAnData = [];
+                foreach ($validated['phuong_an'] as $index => $phuongAn) {
+                    $phuongAnData[] = [
+                        'noidung' => $phuongAn,
+                        'giatri' => $index + 1,
+                        'thutu' => $index + 1
+                    ];
+                }
+                $cauHoi->phuongAnTraLoi()->createMany($phuongAnData);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Cập nhật câu hỏi thành công!'
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function destroy(CauHoiKhaoSat $cauHoi)
@@ -98,22 +145,20 @@ class CauHoiController extends Controller
     public function updateOrder(Request $request)
     {
         $validated = $request->validate([
-            'items' => 'required|array',
-            'items.*.id' => 'required|exists:cauhoi_khaosat,id',
-            'items.*.thutu' => 'required|integer'
+            'order' => 'required|array',
+            'order.*' => 'required|integer|exists:cauhoi_khaosat,id'
         ]);
 
         DB::beginTransaction();
         try {
-            foreach ($validated['items'] as $item) {
-                CauHoiKhaoSat::where('id', $item['id'])
-                    ->update(['thutu' => $item['thutu']]);
+            foreach ($validated['order'] as $index => $id) {
+                CauHoiKhaoSat::where('id', $id)->update(['thutu' => $index + 1]);
             }
             DB::commit();
 
             return response()->json([
                 'success' => true,
-                'message' => 'Cập nhật thứ tự thành công.'
+                'message' => 'Đã cập nhật thứ tự câu hỏi.'
             ]);
 
         } catch (\Exception $e) {

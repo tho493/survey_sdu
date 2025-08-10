@@ -6,6 +6,7 @@ use App\Models\DotKhaoSat;
 use App\Models\PhieuKhaoSat;
 use App\Models\PhieuKhaoSatChiTiet;
 use Illuminate\Http\Request;
+use App\Models\CauHoiKhaoSat;
 use Illuminate\Support\Facades\DB;
 
 class KhaoSatController extends Controller
@@ -79,24 +80,62 @@ class KhaoSatController extends Controller
             ]);
 
             // Lưu câu trả lời
-            foreach ($request->cau_tra_loi as $cauHoiId => $traLoi) {
+            foreach ($request->input('cau_tra_loi', []) as $cauHoiId => $traLoi) {
+                // Bỏ qua nếu giá trị rỗng
+                if (is_null($traLoi) || (is_string($traLoi) && trim($traLoi) === '') || (is_array($traLoi) && empty($traLoi))) {
+                    continue;
+                }
+
+                $cauHoi = CauHoiKhaoSat::find($cauHoiId);
+                if (!$cauHoi)
+                    continue;
+
                 $data = [
                     'phieu_khaosat_id' => $phieuKhaoSat->id,
                     'cauhoi_id' => $cauHoiId
                 ];
 
-                if (is_array($traLoi)) {
-                    // Multiple choice
-                    $data['giatri_json'] = json_encode($traLoi);
-                } elseif (is_numeric($traLoi)) {
-                    // Single choice hoặc rating
-                    $data['phuongan_id'] = $traLoi;
-                } else {
-                    // Text, date
-                    $data['giatri_text'] = $traLoi;
-                }
+                switch ($cauHoi->loai_cauhoi) {
+                    case 'multiple_choice':
+                        $dataToInsert = [];
+                        foreach ($traLoi as $phuongAnId) {
+                            $dataToInsert[] = [
+                                'phieu_khaosat_id' => $phieuKhaoSat->id,
+                                'cauhoi_id' => $cauHoiId,
+                                'phuongan_id' => $phuongAnId,
+                                'created_at' => now(),
+                                'updated_at' => now(),
+                            ];
+                        }
+                        if (!empty($dataToInsert)) {
+                            PhieuKhaoSatChiTiet::insert($dataToInsert);
+                        }
+                        break;
 
-                PhieuKhaoSatChiTiet::create($data);
+                    case 'single_choice':
+                    case 'likert':
+                        $data['phuongan_id'] = $traLoi;
+                        PhieuKhaoSatChiTiet::create($data);
+                        break;
+
+                    // --- PHẦN SỬA LỖI ---
+                    case 'rating':
+                    case 'number':
+                        $data['giatri_number'] = $traLoi;
+                        PhieuKhaoSatChiTiet::create($data);
+                        break;
+
+                    case 'date':
+                        $data['giatri_date'] = $traLoi;
+                        PhieuKhaoSatChiTiet::create($data);
+                        break;
+
+                    case 'text':
+                    default:
+                        $data['giatri_text'] = $traLoi;
+                        PhieuKhaoSatChiTiet::create($data);
+                        break;
+                }
             }
 
             // Cập nhật trạng thái hoàn thành

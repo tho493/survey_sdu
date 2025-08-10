@@ -61,60 +61,84 @@
         <h3 class="h4 mb-3">Phân tích câu trả lời</h3>
         @forelse($dotKhaoSat->mauKhaoSat->cauHoi->sortBy('thutu') as $index => $cauHoi)
             <div class="card shadow mb-4">
-                <div class="card-header d-flex flex-column flex-md-row justify-content-between align-items-md-center">
-                    <div>
-                        <h6 class="mb-1 fw-bold text-primary">
-                            Câu {{ $index + 1 }}: {{ $cauHoi->noidung_cauhoi }}
-                        </h6>
-                    </div>
-                    <small class="text-muted">{{ $thongKeCauHoi[$cauHoi->id]['total'] }} lượt trả lời</small>
+                <div class="card-header">
+                    <h6 class="mb-1 fw-bold text-primary">
+                        Câu {{ $index + 1 }}: {{ $cauHoi->noidung_cauhoi }}
+                    </h6>
+                    <small class="text-muted">({{ $thongKeCauHoi[$cauHoi->id]['total'] ?? 0 }} lượt trả lời)</small>
                 </div>
                 <div class="card-body">
-                    @php $stats = $thongKeCauHoi[$cauHoi->id]; @endphp
+                    @php 
+                        $stats = $thongKeCauHoi[$cauHoi->id] ?? null; 
+                    @endphp
 
-                    @if($stats['type'] == 'chart' && !$stats['data']->isEmpty())
-                        <div class="row">
-                            <div class="col-md-6 mb-3 mb-md-0">
-                                <div class="chart-responsive">
-                                    <canvas id="chart-cauhoi-{{ $cauHoi->id }}" height="200"></canvas>
+                    @if($stats && $stats['total'] > 0)
+                        @if($stats['type'] == 'chart' && !empty($stats['data']) && $stats['data']->isNotEmpty())
+                            <div class="row align-items-center">
+                                <div class="col-md-5">
+                                    <div style="height: 250px;"><canvas id="chart-cauhoi-{{ $cauHoi->id }}"></canvas></div>
                                 </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="table-responsive">
-                                    <table class="table table-sm table-bordered align-middle mb-0">
-                                        <thead class="table-light">
-                                            <tr>
-                                                <th>Phương án</th>
-                                                <th class="text-center">Số lượng</th>
-                                                <th class="text-center">Tỷ lệ</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach($stats['data'] as $item)
+                                <div class="col-md-7">
+                                    <div class="table-responsive">
+                                        <table class="table table-sm table-bordered align-middle mb-0">
+                                            <thead class="table-light">
                                                 <tr>
-                                                    <td>{{ $item->noidung ?? 'Không xác định' }}</td>
-                                                    <td class="text-center">{{ $item->so_luong }}</td>
-                                                    <td class="text-center">{{ $item->ty_le }}%</td>
+                                                    <th>Phương án</th>
+                                                    <th class="text-center">Số lượng</th>
+                                                    <th class="text-center">Tỷ lệ</th>
                                                 </tr>
-                                            @endforeach
-                                        </tbody>
-                                    </table>
+                                            </thead>
+                                            <tbody>
+                                                @foreach($stats['data'] as $item)
+                                                    <tr>
+                                                        <td>{{ $item->noidung ?? 'Không xác định' }}</td>
+                                                        <td class="text-center">{{ $item->so_luong }}</td>
+                                                        <td class="text-center">{{ $item->ty_le }}%</td>
+                                                    </tr>
+                                                @endforeach
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    @elseif($stats['type'] == 'text' && !$stats['data']->isEmpty())
-                        <ul class="list-group">
-                            @foreach($stats['data'] as $item)
-                                <li class="list-group-item">{{ $item->giatri_text }}</li>
-                            @endforeach
-                        </ul>
+                        @elseif($stats['type'] == 'text' && !empty($stats['data']) && $stats['data']->isNotEmpty())
+                            <ul class="list-group list-group-flush">
+                                @foreach($stats['data'] as $item)
+                                    <li class="list-group-item">{{ $item }}</li>
+                                @endforeach
+                            </ul>
+                            @if($stats['total'] > 20)
+                                <p class="small text-muted mt-2 text-center">... và {{ $stats['total'] - 20 }} câu trả lời khác.</p>
+                            @endif
+                        @elseif($stats['type'] == 'number_stats')
+                            <div class="row text-center">
+                                <div class="col">
+                                    <div class="h5">{{ number_format($stats['data']->avg, 2) }}</div>
+                                    <div class="text-muted small">Trung bình</div>
+                                </div>
+                                <div class="col">
+                                    <div class="h5">{{ number_format($stats['data']->min) }}</div>
+                                    <div class="text-muted small">Nhỏ nhất</div>
+                                </div>
+                                <div class="col">
+                                    <div class="h5">{{ number_format($stats['data']->max) }}</div>
+                                    <div class="text-muted small">Lớn nhất</div>
+                                </div>
+                            </div>
+                        @else
+                            <p class="text-muted text-center mb-0">Không có dữ liệu phù hợp để hiển thị cho loại câu hỏi này.</p>
+                        @endif
                     @else
                         <p class="text-muted text-center mb-0">Chưa có dữ liệu cho câu hỏi này.</p>
-                    @endif
+                    @endif {{-- <--- @endif BỊ THIẾU LÀ Ở ĐÂY --}}
                 </div>
             </div>
         @empty
-            <p class="text-muted">Mẫu khảo sát này chưa có câu hỏi nào.</p>
+            <div class="card shadow mb-4">
+                <div class="card-body">
+                    <p class="text-muted text-center mb-0">Mẫu khảo sát này chưa có câu hỏi nào.</p>
+                </div>
+            </div>
         @endforelse
 
         {{-- Danh sách chi tiết phiếu trả lời --}}
@@ -213,6 +237,6 @@
                     }
                 @endif
             @endforeach
-                                                                    });
+                                                                                    });
     </script>
 @endpush

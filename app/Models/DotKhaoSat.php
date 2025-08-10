@@ -4,10 +4,13 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
+use Illuminate\Support\Str;
 
 class DotKhaoSat extends Model
 {
     protected $table = 'dot_khaosat';
+    public $incrementing = false;
+    protected $keyType = 'string';
 
     protected $fillable = [
         'ten_dot',
@@ -21,6 +24,17 @@ class DotKhaoSat extends Model
     ];
 
     protected $dates = ['tungay', 'denngay'];
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($model) {
+            if (empty($model->{$model->getKeyName()})) {
+                $model->{$model->getKeyName()} = (string) Str::uuid();
+            }
+        });
+    }
 
     public function mauKhaoSat()
     {

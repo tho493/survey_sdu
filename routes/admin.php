@@ -36,10 +36,10 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
 
     // Câu hỏi
     Route::post('mau-khao-sat/{mauKhaoSat}/cau-hoi', [CauHoiController::class, 'store'])->name('cau-hoi.store');
+    Route::get('cau-hoi/{cauHoi}', [CauHoiController::class, 'show'])->name('cau-hoi.show');
     Route::put('cau-hoi/{cauHoi}', [CauHoiController::class, 'update'])->name('cau-hoi.update');
     Route::delete('cau-hoi/{cauHoi}', [CauHoiController::class, 'destroy'])->name('cau-hoi.destroy');
     Route::post('cau-hoi/update-order', [CauHoiController::class, 'updateOrder'])->name('cau-hoi.update-order');
-
 
 
     // Đợt khảo sát

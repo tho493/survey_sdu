@@ -92,6 +92,24 @@
             color: white;
             text-align: center;
         }
+
+        .stats-table {
+            width: 70%;
+            margin: 10px auto;
+            border-collapse: collapse;
+        }
+
+        .stats-table td {
+            border: 1px solid #ccc;
+            padding: 8px;
+            text-align: center;
+        }
+
+        .stats-table td:first-child {
+            text-align: left;
+            font-weight: bold;
+            background-color: #f2f2f2;
+        }
     </style>
 </head>
 
@@ -125,7 +143,7 @@
         </tr>
         <tr>
             <td>Thời gian trả lời trung bình</td>
-            <td>{{ $tongQuan['thoi_gian_tb'] }}</td>
+            <td>{{ $tongQuan['thoi_gian_tb'] ?? 'N/A' }}</td>
         </tr>
     </table>
 
@@ -162,6 +180,25 @@
                             </tr>
                         @endforeach
                     </tbody>
+                </table>
+            @elseif($stats['type'] == 'number_stats')
+                <table class="stats-table">
+                    <tr>
+                        <td>Giá trị Trung bình</td>
+                        <td>{{ number_format($stats['data']->avg, 2) }}</td>
+                    </tr>
+                    <tr>
+                        <td>Giá trị Nhỏ nhất (Min)</td>
+                        <td>{{ number_format($stats['data']->min) }}</td>
+                    </tr>
+                    <tr>
+                        <td>Giá trị Lớn nhất (Max)</td>
+                        <td>{{ number_format($stats['data']->max) }}</td>
+                    </tr>
+                    <tr>
+                        <td>Độ lệch chuẩn</td>
+                        <td>{{ number_format($stats['data']->stddev, 2) }}</td>
+                    </tr>
                 </table>
             @elseif($stats['type'] == 'text' && !$stats['data']->isEmpty())
                 <ul style="padding-left: 20px;">

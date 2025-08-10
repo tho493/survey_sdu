@@ -3,6 +3,7 @@
 namespace App\Exports;
 
 use App\Models\DotKhaoSat;
+use App\Models\PhieuKhaoSat;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
@@ -37,7 +38,7 @@ class KhaoSatExport implements FromCollection, WithHeadings, WithMapping, Should
     }
 
     /**
-     * @return \Illuminate\Support\Collection // WITH ERROR
+     * @return \Illuminate\Support\Collection
      */
     public function collection()
     {
@@ -67,19 +68,42 @@ class KhaoSatExport implements FromCollection, WithHeadings, WithMapping, Should
      */
     public function map($phieu): array
     {
-        // Tạo một mảng các câu trả lời đã được index theo cauhoi_id để tìm kiếm nhanh
-        $answersByQuestionId = $phieu->chiTiet->keyBy('cauhoi_id');
+        // Nhóm các câu trả lời theo ID câu hỏi
+        $answersByQuestionId = $phieu->chiTiet->groupBy('cauhoi_id');
         $rowAnswers = [];
 
-        // Lặp qua danh sách câu hỏi để đảm bảo các câu trả lời đúng thứ tự
+        // Lặp qua danh sách câu hỏi CỐ ĐỊNH để đảm bảo các cột luôn đúng thứ tự
         foreach ($this->cauHoiCollection as $cauHoi) {
-            $answer = $answersByQuestionId->get($cauHoi->id);
-            if ($answer) {
-                // Sử dụng accessor `getGiaTriAttribute` đã tạo trong model PhieuKhaoSatChiTiet
-                $rowAnswers[] = $answer->GiaTri;
-            } else {
-                $rowAnswers[] = ''; // Để trống nếu không có câu trả lời
+            $cellValue = ''; // Giá trị mặc định cho ô
+
+            // Lấy ra các câu trả lời cho câu hỏi hiện tại
+            $answersForThisQuestion = $answersByQuestionId->get($cauHoi->id);
+
+            if ($answersForThisQuestion) {
+                if ($cauHoi->loai_cauhoi === 'multiple_choice') {
+                    // --- PHẦN SỬA LỖI ---
+                    // Nếu là câu hỏi chọn nhiều, lấy nội dung của từng phương án và nối lại
+                    $cellValue = $answersForThisQuestion
+                        ->map(fn($answer) => $answer->phuongAn->noidung ?? '')
+                        ->implode('; '); // Nối các câu trả lời bằng dấu '; '
+                } else {
+                    // Với các loại câu hỏi khác, chỉ có 1 câu trả lời
+                    $firstAnswer = $answersForThisQuestion->first();
+                    if ($firstAnswer) {
+                        if ($firstAnswer->phuongan_id) {
+                            $cellValue = $firstAnswer->phuongAn->noidung ?? '';
+                        } elseif ($firstAnswer->giatri_text) {
+                            $cellValue = $firstAnswer->giatri_text;
+                        } elseif ($firstAnswer->giatri_number !== null) {
+                            $cellValue = $firstAnswer->giatri_number;
+                        } elseif ($firstAnswer->giatri_date) {
+                            $cellValue = $firstAnswer->giatri_date;
+                        }
+                    }
+                }
             }
+
+            $rowAnswers[] = $cellValue;
         }
 
         // Ghép thông tin phiếu với các câu trả lời

@@ -7,6 +7,17 @@
             position: sticky;
             top: 20px;
         }
+        
+        input[type="text"],
+        input[type="email"],
+        input[type="number"],
+        input[type="date"],
+        textarea,
+        select,
+        .form-input,
+        .form-textarea {
+            border: 1px solid #d1d5db !important;
+        }
 @endsection
 
 
@@ -15,6 +26,37 @@
         <div class="flex flex-col lg:flex-row gap-8">
             <!-- Main Content -->
             <div class="w-full lg:w-2/3">
+                <div class="flex items-center justify-between mb-4">
+                <!-- Breadcrumb navigation -->
+                    <nav class="flex items-center text-sm text-gray-500 mb-2" aria-label="Breadcrumb">
+                        <ol class="inline-flex items-center space-x-1 md:space-x-3">
+                            <li class="inline-flex items-center">
+                                <a href="{{ url('/') }}" class="inline-flex items-center text-gray-500 hover:text-blue-600">
+                                    <i class="bi bi-house-door-fill mr-1"></i> Trang chủ
+                                </a>
+                            </li>
+                            <li>
+                                <div class="flex items-center">
+                                    <i class="bi bi-chevron-right mx-1"></i>
+                                    <a href="{{ route('khao-sat.index') }}" class="text-gray-500 hover:text-blue-600">
+                                        Khảo sát
+                                    </a>
+                                </div>
+                            </li>
+                            <li>
+                                <div class="flex items-center">
+                                    <i class="bi bi-chevron-right mx-1"></i>
+                                    <span class="text-blue-700 font-semibold" aria-current="page">
+                                        {{ $dotKhaoSat->ten_dot }}
+                                    </span>
+                                </div>
+                            </li>
+                        </ol>
+                    </nav>
+                    <!-- <button type="button" class="inline-flex items-center px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition" onclick="history.back()">
+                        <i class="bi bi-arrow-left mr-2"></i> Quay lại
+                    </button> -->
+                </div>
                 <div class="bg-white shadow rounded-lg mb-6">
                     <div class="p-6">
                         <h2 class="text-2xl font-bold mb-2">{{ $dotKhaoSat->ten_dot }}</h2>
@@ -42,22 +84,22 @@
                                     <label class="block font-medium mb-1">
                                         Mã số <span class="text-red-600">*</span>
                                     </label>
-                                    <input type="text" class="form-input w-full border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" name="ma_nguoi_traloi" required>
+                                    <input type="text" class="form-input w-full rounded focus:ring-blue-500 focus:border-blue-500" name="ma_nguoi_traloi" required>
                                     <small class="text-gray-500">Mã sinh viên, mã nhân viên, mã doanh nghiệp...</small>
                                 </div>
                                 <div class="w-full md:w-1/2 px-2 mb-4">
                                     <label class="block font-medium mb-1">
                                         Họ và tên <span class="text-red-600">*</span>
                                     </label>
-                                    <input type="text" class="form-input w-full border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" name="metadata[hoten]" required>
+                                    <input type="text" class="form-input w-full rounded focus:ring-blue-500 focus:border-blue-500" name="metadata[hoten]" required>
                                 </div>
                                 <div class="w-full md:w-1/2 px-2 mb-4">
                                     <label class="block font-medium mb-1">Đơn vị/Khoa</label>
-                                    <input type="text" class="form-input w-full border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" name="metadata[donvi]">
+                                    <input type="text" class="form-input w-full rounded focus:ring-blue-500 focus:border-blue-500" name="metadata[donvi]">
                                 </div>
                                 <div class="w-full md:w-1/2 px-2 mb-4">
                                     <label class="block font-medium mb-1">Email</label>
-                                    <input type="email" class="form-input w-full border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500" name="metadata[email]">
+                                    <input type="email" class="form-input w-full rounded focus:ring-blue-500 focus:border-blue-500" name="metadata[email]">
                                 </div>
                                 <input type="hidden" name="metadata[thoigian_batdau]" id="thoigian_batdau">
                                 <script>
@@ -135,7 +177,7 @@
                                             @break
 
                                         @case('text')
-                                            <textarea class="form-textarea mt-2 w-full border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                                            <textarea class="form-textarea mt-2 w-full rounded focus:ring-blue-500 focus:border-blue-500"
                                                   name="cau_tra_loi[{{ $cauHoi->id }}]"
                                                   rows="3"
                                                   placeholder="Nhập câu trả lời của bạn..."
@@ -165,17 +207,15 @@
                                             <div class="mt-2">
                                                 <div class="flex space-x-2">
                                                     @for($i = 1; $i <= 5; $i++)
-                                                        <div>
-                                                            <input type="radio" class="hidden peer"
-                                                                   name="cau_tra_loi[{{ $cauHoi->id }}]"
-                                                                   value="{{ $i }}"
-                                                                   id="rating_{{ $cauHoi->id }}_{{ $i }}"
-                                                                   {{ $cauHoi->batbuoc ? 'required' : '' }}>
-                                                            <label class="inline-block px-3 py-1 border border-blue-500 rounded cursor-pointer peer-checked:bg-blue-500 peer-checked:text-white transition"
-                                                                   for="rating_{{ $cauHoi->id }}_{{ $i }}">
-                                                                {{ $i }}
-                                                            </label>
-                                                        </div>
+                                                        <input type="radio" class="btn-check" 
+                                                            name="cau_tra_loi[{{ $cauHoi->id }}]" 
+                                                            value="{{ $i }}" {{-- Giá trị là số --}}
+                                                            id="rating_{{ $cauHoi->id }}_{{ $i }}"
+                                                            {{ $cauHoi->batbuoc ? 'required' : '' }}>
+                                                        <label class="btn btn-outline-primary" 
+                                                            for="rating_{{ $cauHoi->id }}_{{ $i }}">
+                                                            {{ $i }}
+                                                        </label>
                                                     @endfor
                                                 </div>
                                                 <small class="text-gray-500 block mt-1">1 = Rất không hài lòng, 5 = Rất hài lòng</small>
@@ -183,13 +223,13 @@
                                             @break
 
                                         @case('date')
-                                            <input type="date" class="form-input mt-2 w-full border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                                            <input type="date" class="form-input mt-2 w-full rounded focus:ring-blue-500 focus:border-blue-500"
                                                    name="cau_tra_loi[{{ $cauHoi->id }}]"
                                                    {{ $cauHoi->batbuoc ? 'required' : '' }}>
                                             @break
 
                                         @case('number')
-                                            <input type="number" class="form-input mt-2 w-full border-gray-300 rounded focus:ring-blue-500 focus:border-blue-500"
+                                            <input type="number" class="form-input mt-2 w-full rounded focus:ring-blue-500 focus:border-blue-500"
                                                    name="cau_tra_loi[{{ $cauHoi->id }}]"
                                                    placeholder="Nhập số..."
                                                    {{ $cauHoi->batbuoc ? 'required' : '' }}>
@@ -222,25 +262,23 @@
                     <div class="bg-white shadow rounded-lg mb-4">
                         <div class="p-6 flex flex-col items-center">
                             <h6 class="font-semibold mb-4">Thời gian làm khảo sát</h6>
-                            <div class="text-3xl font-mono text-blue-600" id="timerDisplay">00:00</div>
-                            <small class="text-gray-500 mt-2">Thời gian sẽ được tính từ khi bạn mở khảo sát này.</small>
+                            <div class="text-3xl font-bold text-blue-600" id="survey-timer">00:00</div>
+                            <small class="text-gray-500 mt-2">Thời gian bạn đã làm khảo sát, tính từ khi mở khảo sát này</small>
                         </div>
                     </div>
                     <script>
-                        // Simple timer
+                        // Simple timer for survey duration
                         let secondsElapsed = 0;
                         function pad(n) { return n < 10 ? '0' + n : n; }
-                        function updateTimerDisplay() {
+                        function updateTimer() {
+                            secondsElapsed++;
                             const minutes = Math.floor(secondsElapsed / 60);
                             const seconds = secondsElapsed % 60;
-                            document.getElementById('timerDisplay').textContent = pad(minutes) + ':' + pad(seconds);
+                            document.getElementById('survey-timer').textContent = pad(minutes) + ':' + pad(seconds);
                         }
-                        setInterval(function() {
-                            secondsElapsed++;
-                            updateTimerDisplay();
-                        }, 1000);
-                        // Initialize display
-                        updateTimerDisplay();
+                        document.addEventListener('DOMContentLoaded', function() {
+                            setInterval(updateTimer, 1000);
+                        });
                     </script>
                 
                     <div class="bg-white shadow rounded-lg mb-4">

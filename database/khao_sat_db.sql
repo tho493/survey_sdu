@@ -121,7 +121,7 @@ CREATE TABLE IF NOT EXISTS `phuongan_traloi` (
 
 -- Bảng đợt khảo sát
 CREATE TABLE IF NOT EXISTS `dot_khaosat` (
-  `id` INT(11) NOT NULL AUTO_INCREMENT,
+  `id` VARCHAR(50) NOT NULL,
   `ten_dot` VARCHAR(255) NOT NULL,
   `mau_khaosat_id` INT(11) NOT NULL,
   `namhoc_id` INT(11),
@@ -147,7 +147,7 @@ CREATE TABLE IF NOT EXISTS `dot_khaosat` (
 -- Bảng phiếu khảo sát
 CREATE TABLE IF NOT EXISTS `phieu_khaosat` (
   `id` INT(11) NOT NULL AUTO_INCREMENT,
-  `dot_khaosat_id` INT(11) NOT NULL,
+  `dot_khaosat_id` VARCHAR(50) NOT NULL,
   `ma_nguoi_traloi` VARCHAR(50), -- Mã SV, mã NV, mã DN...
   `metadata` JSON, -- Thông tin người trả lời (họ tên, đơn vị, email...)
   `trangthai` ENUM('draft', 'completed') DEFAULT 'draft',
@@ -218,7 +218,7 @@ CREATE TABLE IF NOT EXISTS `cau_hinh_dich_vu` (
   `giatri` TEXT,
   `mota` VARCHAR(255),
   `nhom_cauhinh` VARCHAR(50),
-  `updated_at` DATETIME ON UPDATE CURRENT_TIMESTAMP
+  `updated_at` DATETIME ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `idx_ma_cauhinh` (`ma_cauhinh`),
   KEY `idx_nhom` (`nhom_cauhinh`)
@@ -230,8 +230,8 @@ CREATE TABLE IF NOT EXISTS `thongbao` (
   `tieude` VARCHAR(255) NOT NULL,
   `noidung` TEXT,
   `loai_thongbao` ENUM('info', 'warning', 'error', 'success') DEFAULT 'info',
-  `doi_tuong` VARCHAR(50), -- all, sinhvien, giangvien, nhanvien
-  `dot_khaosat_id` INT(11),
+  -- `doi_tuong` VARCHAR(50), 
+  `dot_khaosat_id` VARCHAR(50),
   `trangthai` TINYINT(1) DEFAULT 1,
   `created_at` DATETIME DEFAULT CURRENT_TIMESTAMP,
   `ngay_hethan` DATETIME,

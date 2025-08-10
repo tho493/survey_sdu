@@ -34,4 +34,6 @@ class CauHoiKhaoSat extends Model
     {
         return $this->hasMany(PhuongAnTraLoi::class, 'cauhoi_id')->orderBy('thutu');
     }
+
+
 }

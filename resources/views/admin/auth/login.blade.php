@@ -209,9 +209,6 @@
                 <div class="mb-3 d-flex justify-content-center">
                     <div class="g-recaptcha" data-sitekey="{{ env('RECAPTCHA_SITE_KEY') }}"></div>
                     @error('g-recaptcha-response')
-                        <div class="invalid-feedback d-block">
-                            {{ $message }}
-                        </div>
                     @enderror
                 </div>
 
