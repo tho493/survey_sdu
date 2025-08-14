@@ -8,14 +8,12 @@
     <title> @yield('title', "Trang chủ") - Hệ thống khảo sát trực tuyến </title>
 
     {{-- Tailwind via CDN for quick prototyping; replace with @vite for production --}}
-    <!-- <script src="https://cdn.tailwindcss.com"></script> -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css">
     <style>
-        /* Optional: custom container width to feel closer to the screenshot */
         .container-narrow {
-            max-width: 1100px
+            max-width: 85%;
         }
 
         .shadow-soft {
@@ -27,15 +25,14 @@
             top: 0;
             z-index: 50;
         }
-
-        @yield('style')
     </style>
+    @stack('styles')
 </head>
 
 <body class="bg-white text-slate-800">
     {{-- Top bar --}}
     <header class="bg-[#1f66b3] text-white">
-        <div class="w-full px-2">
+        <div class="mx-auto px-2" style="max-width: 90%;">
             <div class="flex items-center justify-between py-3">
                 <div class="flex items-center gap-3">
                     <a href="/" class="h-10 w-10 rounded-full bg-white/95 grid place-items-center">

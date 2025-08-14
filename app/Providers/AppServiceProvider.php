@@ -9,6 +9,7 @@ use App\Models\DotKhaoSat;
 use App\Observers\ActivityLogObserver;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
+use Illuminate\Pagination\Paginator;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -34,6 +35,8 @@ class AppServiceProvider extends ServiceProvider
         User::observe(ActivityLogObserver::class);
         MauKhaoSat::observe(ActivityLogObserver::class);
         DotKhaoSat::observe(ActivityLogObserver::class);
+
+        Paginator::useBootstrapFive();
     }
 
     /**

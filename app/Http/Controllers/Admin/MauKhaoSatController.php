@@ -73,6 +73,7 @@ class MauKhaoSatController extends Controller
                 'trangthai' => 'draft'
             ]);
 
+
             DB::commit();
 
             return redirect()
@@ -92,8 +93,9 @@ class MauKhaoSatController extends Controller
     public function edit(MauKhaoSat $mauKhaoSat)
     {
         $mauKhaoSat->load(['cauHoi.phuongAnTraLoi']);
+        $isLocked = $mauKhaoSat->dotKhaoSat->where('trangthai', 'active')->isNotEmpty();
 
-        return view('admin.mau-khao-sat.edit', compact('mauKhaoSat'));
+        return view('admin.mau-khao-sat.edit', compact('mauKhaoSat', 'isLocked'));
     }
 
     /**
@@ -101,14 +103,32 @@ class MauKhaoSatController extends Controller
      */
     public function update(Request $request, MauKhaoSat $mauKhaoSat)
     {
-        $validated = $request->validate([
-            'ten_mau' => 'required|max:255',
-            'mota' => 'nullable',
-            'trangthai' => 'in:draft,active,inactive'
-        ], [
-            'ten_mau.required' => 'Vui lòng nhập tên mẫu khảo sát',
-            'trangthai.in' => 'Trạng thái không hợp lệ'
-        ]);
+        // Nếu có một đợt đang active thì không cho sửa gì, chỉ closed hoặc draft thì được
+        $isActiveInSurvey = $mauKhaoSat->dotKhaoSat()->where('trangthai', 'active')->exists();
+
+        if ($isActiveInSurvey) {
+            // Không cho sửa thông tin mẫu. 
+            if ($request->input('ten_mau') != null || $request->input('mota') != null) {
+                // Ở FE đã disabled 2 cái này, nếu không phải là null thì đã sửa. Báo lỗi nếu vẫn sửa được
+                return back()
+                    ->with('error', 'Không thể sửa tên hoặc mô tả. Mẫu khảo sát này đang được sử dụng trong một đợt khảo sát đang hoạt động.')
+                    ->withInput();
+            }
+            $validated = $request->validate([
+                'trangthai' => 'in:draft,active,inactive'
+            ], [
+                'trangthai.in' => 'Trạng thái không hợp lệ'
+            ]);
+        } else {
+            $validated = $request->validate([
+                'ten_mau' => 'required|max:255',
+                'mota' => 'nullable',
+                'trangthai' => 'in:draft,active,inactive'
+            ], [
+                'ten_mau.required' => 'Vui lòng nhập tên mẫu khảo sát',
+                'trangthai.in' => 'Trạng thái không hợp lệ'
+            ]);
+        }
 
         try {
             $mauKhaoSat->update($validated);

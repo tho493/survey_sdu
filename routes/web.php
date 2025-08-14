@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Mail\SentMessage;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\KhaoSatController;
@@ -12,6 +13,19 @@ Route::get('/', function () {
     return redirect()->route('khao-sat.index');
 });
 Route::get('/thank-you', [KhaoSatController::class, 'thanks'])->name('thanks');
+Route::get('/test-config', function () {
+    // Lấy giá trị config 'app.name'
+    $appName = config('app.name');
+
+    // Lấy giá trị config 'mail.from.address'
+    $mailFrom = config('mail.from.address');
+
+    // In ra để kiểm tra
+    dd([
+        'app.name from config()' => $appName,
+        'mail.from.address from config()' => $mailFrom
+    ]);
+});
 
 // Authentication
 Route::get('login', [LoginController::class, 'showLoginForm'])->name('login');

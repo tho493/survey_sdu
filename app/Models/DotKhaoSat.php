@@ -71,4 +71,56 @@ class DotKhaoSat extends Model
         $completed = $this->phieuKhaoSat()->where('trangthai', 'completed')->count();
         return round(($completed / $total) * 100, 2);
     }
+
+    /**
+     * Kiểm tra xem đợt khảo sát có phải là bản nháp không.
+     *
+     * @return bool
+     */
+    public function isDraft(): bool
+    {
+        return $this->trangthai === 'draft';
+    }
+
+    /**
+     * Kiểm tra xem đợt khảo sát có đang trong thời gian hoạt động hay không.
+     *
+     * @return bool
+     */
+    public function isInActivePeriod(): bool
+    {
+        return Carbon::now()->between(
+            $this->tungay->startOfDay(),
+            $this->denngay->endOfDay()
+        );
+    }
+
+    /**
+     * Kiểm tra xem đợt khảo sát đã bị đóng (dù còn hạn hay không).
+     * @return bool
+     */
+    public function isClosed(): bool
+    {
+        return $this->trangthai === 'closed';
+    }
+
+    /**
+     * Kiểm tra xem đợt khảo sát đã hết hạn (quá ngày kết thúc).
+     *
+     * @return bool
+     */
+    public function isExpired(): bool
+    {
+        return Carbon::now()->gt($this->denngay->endOfDay());
+    }
+
+    /**
+     * Kiểm tra xem đợt khảo sát chưa tới ngày bắt đầu.
+     *
+     * @return bool
+     */
+    public function isUpcoming(): bool
+    {
+        return Carbon::now()->lt($this->tungay->startOfDay());
+    }
 }

@@ -68,10 +68,10 @@
                                                     <td>
                                                         <span
                                                             class="badge bg-{{ 
-                                                                                                                                                                $log->hanhdong == 'create' ? 'success' :
+                                                                                                                                                                                        $log->hanhdong == 'create' ? 'success' :
                                 ($log->hanhdong == 'update' ? 'info' :
                                     ($log->hanhdong == 'delete' ? 'danger' : 'secondary')) 
-                                                                                                                                                            }}">
+                                                                                                                                                                                    }}">
                                                             {{ ucfirst($log->hanhdong) }}
                                                         </span>
                                                     </td>
@@ -92,7 +92,9 @@
                 </div>
 
                 <div class="mt-3">
-                    {{ $logs->links() }}
+                    @if ($logs->hasPages())
+                        {{ $logs->withQueryString()->links() }}
+                    @endif
                 </div>
             </div>
         </div>

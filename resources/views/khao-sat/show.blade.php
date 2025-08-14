@@ -1,14 +1,15 @@
 @extends('layouts.home')
 
-@section('title', 'Khảo sát ' . $dotKhaoSat->ten_dot)
+@section('title','Khảo sát ' . $dotKhaoSat->ten_dot)
 
-@section('style')
-        .progress-section {
-            position: sticky;
-            top: 20px;
-        }
-        
-        input[type="text"],
+@push('styles')
+<style>
+    .progress-section {
+        position: sticky;
+        top: 20px;
+    }
+    
+    input[type="text"],
         input[type="email"],
         input[type="number"],
         input[type="date"],
@@ -18,7 +19,8 @@
         .form-textarea {
             border: 1px solid #d1d5db !important;
         }
-@endsection
+</style>
+@endpush
 
 
 @section('content')

@@ -593,21 +593,26 @@ INSERT INTO `namhoc` (`namhoc`) VALUES
 
 -- Thêm cấu hình hệ thống
 INSERT INTO `cau_hinh_dich_vu` (`ma_cauhinh`, `giatri`, `mota`, `nhom_cauhinh`) VALUES
--- Cấu hình email mặc định
-('email_smtp_host', 'smtp.gmail.com', 'SMTP Host', 'email'),
-('email_smtp_port', '587', 'SMTP Port', 'email'),
-('email_smtp_encryption', 'tls', 'SMTP Encryption (tls/ssl)', 'email'),
-('email_smtp_username', 'test@gmail.com', 'SMTP Username', 'email'),
-('email_smtp_password', '123456', 'SMTP Password/App Password', 'email'),
-('email_from_address', 'noreply@test.com', 'Địa chỉ email gửi đi mặc định', 'email'),
-('email_from_name', 'Hệ thống Khảo sát', 'Tên người gửi mặc định', 'email'),
-('email_reply_to', 'support@test.com', 'Địa chỉ email nhận phản hồi', 'email'),
+-- Cấu hình chung
+('app.name', 'Hệ thống Khảo sát SDU', 'Tên ứng dụng (hiển thị trên tab trình duyệt, email)', 'general'),
+('app.env', 'local', 'Môi trường (local, production)', 'general'),
+('app.debug', 'true', 'Chế độ gỡ lỗi (Bật: true, Tắt: false)', 'general'),
+('app.timezone', 'Asia/Ho_Chi_Minh', 'Múi giờ của hệ thống', 'general'),
+('app.locale', 'vi', 'Ngôn ngữ mặc định (vi, en)', 'general'),
 
--- Cấu hình giới hạn gửi
-('email_max_attempts', '3', 'Số lần thử gửi lại tối đa', 'email'),
-('email_queue_timeout', '300', 'Thời gian timeout của queue gửi mail (giây)', 'email'),
-('email_batch_size', '50', 'Số email tối đa gửi trong 1 batch', 'email'),
-('email_rate_limit', '100', 'Số email tối đa gửi trong 1 giờ', 'email'),
+-- Cấu hình email mặc định
+('mail.default', 'smtp', 'Phương thức gửi mail mặc định (smtp, log, mailgun)', 'email'),
+-- Cấu hình cho SMTP
+('mail.mailers.smtp.host', 'smtp.gmail.com', 'Máy chủ SMTP', 'email'),
+('mail.mailers.smtp.port', '587', 'Cổng SMTP', 'email'),
+('mail.mailers.smtp.encryption', 'tls', 'Mã hóa (tls, ssl, null)', 'email'),
+('mail.mailers.smtp.username', 'your-email@gmail.com', 'Tên đăng nhập SMTP', 'email'),
+('mail.mailers.smtp.password', '', 'Mật khẩu SMTP/App Password (để trống nếu không đổi)', 'email'),
+('mail.mailers.smtp.timeout', null, 'Thời gian timeout (giây)', 'email'),
+-- Cấu hình địa chỉ gửi đi
+('mail.from.address', 'khaosat@sdu.edu.vn', 'Địa chỉ email gửi đi', 'email'),
+('mail.from.name', '${APP_NAME}', 'Tên người gửi (dùng ${APP_NAME} để lấy tên ứng dụng)', 'email'),
+
 
 -- Cấu hình thông báo
 ('email_notify_error', '1', 'Gửi thông báo khi có lỗi', 'email'),
@@ -615,11 +620,9 @@ INSERT INTO `cau_hinh_dich_vu` (`ma_cauhinh`, `giatri`, `mota`, `nhom_cauhinh`) 
 ('email_test_mode', '0', 'Chế độ test email (1: bật, 0: tắt)', 'email'),
 ('email_test_recipient', 'test@test.com', 'Email nhận khi ở chế độ test', 'email'),
 
--- Config app
-('system_name', 'Hệ thống khảo sát nội bộ', 'Hệ thống khảo sát nội bộ của trường Đại học Sao Đỏ', 'general'),
-('max_file_size', '10485760', 'Dung lượng file tối đa (bytes)', 'upload'),
-('session_timeout', '3600', 'Thời gian timeout phiên (giây)', 'security');
-
+('session.lifetime', '120', 'Thời gian phiên làm việc (phút)', 'security'),
+('recaptcha.site_key', 'YOUR_SITE_KEY_HERE', 'Google reCAPTCHA Site Key', 'security'),
+('recaptcha.secret_key', '', 'Google reCAPTCHA Secret Key', 'security'),
 
 -- Thêm template email mẫu
 INSERT INTO `template_email` (`ma_template`, `ten_template`, `tieude`, `noidung`, `bien_template`) VALUES

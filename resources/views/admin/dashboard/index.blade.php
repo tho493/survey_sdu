@@ -196,29 +196,26 @@
             <div class="col-lg-6">
                 <div class="card shadow mb-4">
                     <div class="card-header py-3">
-                        <h6 class="m-0 font-weight-bold text-primary">Người dùng hoạt động</h6>
+                        <h6 class="m-0 font-weight-bold text-primary">Các tài khoản đăng nhập gần đây</h6>
                     </div>
                     <div class="card-body">
                         <div class="table-responsive">
                             <table class="table table-sm">
                                 <thead>
                                     <tr>
+                                        <th>ID</th>
+                                        <th>Username</th>
                                         <th>Họ tên</th>
-                                        <th>Quyền</th>
                                         <th>Đăng nhập lần cuối</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach($activeUsers as $user)
                                         <tr>
+                                            <td>{{ $user->id }}</td>
+                                            <td>{{ $user->tendangnhap }}</td>
                                             <td>{{ $user->hoten }}</td>
-                                            <td>
-                                                <span
-                                                    class="badge bg-{{ $user->quyen == 'admin' ? 'danger' : ($user->quyen == 'manager' ? 'warning' : 'info') }}">
-                                                    {{ ucfirst($user->quyen) }}
-                                                </span>
-                                            </td>
-                                            <td>{{ $user->last_login ? \Carbon\Carbon::parse($user->last_login)->diffForHumans() : 'Chưa đăng nhập' }}
+                                            <td>{{ $user->last_login ? \Carbon\Carbon::parse($user->last_login)->diffForHumans() : 'Chưa từng đăng nhập' }}
                                             </td>
                                         </tr>
                                     @endforeach

@@ -100,7 +100,16 @@
                                             <span class="badge bg-warning">Nháp</span>
                                             @break
                                         @case('closed')
-                                            <span class="badge bg-secondary">Đã đóng</span>
+                                            <!-- <span class="badge bg-secondary">Đã đóng</span> -->
+                                             @php
+                                                $isClosedEarly = now()->lt($dot->denngay);
+                                            @endphp
+                                            
+                                            @if($isClosedEarly)
+                                                <span class="badge bg-danger">Dừng sớm</span>
+                                            @else
+                                                <span class="badge bg-secondary">Đã kết thúc</span>
+                                            @endif
                                             @break
                                     @endswitch
                                 </td>
@@ -144,7 +153,9 @@
             </div>
             
             <div class="mt-3">
-                {{ $dotKhaoSats->withQueryString()->links() }}
+                @if ($dotKhaoSats->hasPages())
+                    {{ $dotKhaoSats->withQueryString()->links() }}
+                @endif
             </div>
         </div>
     </div>

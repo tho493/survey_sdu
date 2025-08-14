@@ -182,7 +182,10 @@
                     </table>
                 </div>
                 <div class="mt-3">
-                    {{ $danhSachPhieu->links() }}
+                    {{-- $danhSachPhieu->links() --}}
+                    @if ($danhSachPhieu->hasPages())
+                        {{ $danhSachPhieu->withQueryString()->links() }}
+                    @endif
                 </div>
             </div>
         </div>

@@ -69,8 +69,6 @@ Route::prefix('admin')->name('admin.')->middleware(['auth'])->group(function () 
     // System Configuration
     Route::prefix('config')->name('config.')->group(function () {
         Route::get('/', [SystemConfigController::class, 'index'])->name('index');
-
-        // Cập nhật cấu hình
         Route::post('/update-configs', [SystemConfigController::class, 'updateConfigs'])->name('update-configs');
 
         // Cập nhật template email

@@ -554,11 +554,11 @@
             });
 
             // Auto hide alerts after 5 seconds
-            setTimeout(function () {
-                $('.alert:not(.alert-permanent)').fadeOut('slow', function () {
-                    $(this).alert('close');
-                });
-            }, 5000);
+            // setTimeout(function () {
+            //     $('.alert:not(.alert-permanent)').fadeOut('slow', function () {
+            //         $(this).alert('close');
+            //     });
+            // }, 5000);
 
             // Add smooth scrolling
             $('a[href*="#"]').on('click', function (e) {
@@ -671,11 +671,11 @@
             });
 
             // --- Tự ẩn alerts sau 5s (giữ như cũ)
-            setTimeout(function () {
-                $('.alert:not(.alert-permanent)').fadeOut('slow', function () {
-                    $(this).alert('close');
-                });
-            }, 5000);
+            // setTimeout(function () {
+            //     $('.alert:not(.alert-permanent)').fadeOut('slow', function () {
+            //         $(this).alert('close');
+            //     });
+            // }, 5000);
 
             // --- Smooth scroll (giữ như cũ)
             $('a[href*="#"]').on('click', function (e) {

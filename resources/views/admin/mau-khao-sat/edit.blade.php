@@ -3,7 +3,7 @@
 @section('title', 'Chỉnh sửa mẫu khảo sát')
 
 @section('content')
-    < class="container-fluid">
+    <div class="container-fluid">
         <nav aria-label="breadcrumb">
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="{{ route('admin.mau-khao-sat.index') }}">Mẫu khảo sát</a></li>
@@ -27,7 +27,7 @@
                                 <div class="col-md-8">
                                     <label class="form-label">Tên mẫu khảo sát <span class="text-danger">*</span></label>
                                     <input type="text" class="form-control @error('ten_mau') is-invalid @enderror"
-                                        name="ten_mau" value="{{ old('ten_mau', $mauKhaoSat->ten_mau) }}" required>
+                                        name="ten_mau" value="{{ old('ten_mau', $mauKhaoSat->ten_mau) }}" required @if($isLocked) disabled @endif>
                                     @error('ten_mau')<div class="invalid-feedback">{{ $message }}</div>@enderror
                                 </div>
                                 <div class="col-md-4">
@@ -43,7 +43,7 @@
                             <div class="mb-3">
                                 <label class="form-label">Mô tả</label>
                                 <textarea class="form-control @error('mota') is-invalid @enderror" name="mota"
-                                    rows="3">{{ old('mota', $mauKhaoSat->mota) }}</textarea>
+                                    rows="3" @if($isLocked) disabled @endif >{{ old('mota', $mauKhaoSat->mota) }} </textarea>
                                 @error('mota')<div class="invalid-feedback">{{ $message }}</div>@enderror
                             </div>
                             <div class="text-end">
@@ -58,8 +58,11 @@
                 <div class="card shadow">
                     <div class="card-header d-flex justify-content-between align-items-center">
                         <h5 class="mb-0">Danh sách câu hỏi ({{ $mauKhaoSat->cauHoi->count() ?? 0 }} câu)</h5>
-                        <button class="btn btn-primary btn-sm" onclick="showModalThemCauHoi()"><i class="bi bi-plus"></i>
-                            Thêm câu hỏi</button>
+                        <button class="btn btn-primary btn-sm"
+                            onclick="@if($isLocked) alert('Mẫu khảo sát này đang trong trạng thái hoạt động nên không được thêm câu hỏi'); @else showModalThemCauHoi(); @endif">
+                            <i class="bi bi-plus"></i> Thêm câu hỏi
+                        </button>
+                        <!-- @ elseif($mauKhaoSat->dotKhaoSat->first()->trangthai == 'active') alert('Đang có đợt khảo sát hoạt động nên không được thêm câu hỏi') -->
                     </div>
                     <div class="card-body">
                         @if(($mauKhaoSat->cauHoi->count() ?? 0) == 0)
@@ -143,10 +146,56 @@
                             </tr>
                         </table>
 
-                        @if(($mauKhaoSat->dotKhaoSat->count() ?? 0) > 0)
+                        @if($isLocked)
+                            <div class="alert alert-warning d-flex align-items-center" role="alert">
+                                <i class="bi bi-exclamation-triangle-fill me-3 fs-4"></i>
+                                <div>
+                                    <strong>Mẫu khảo sát đang bị khóa.</strong> Mẫu này đang được sử dụng trong ít nhất một đợt
+                                    khảo sát đang hoạt
+                                    động. <br>
+                                    Bạn chỉ có thể thay đổi <strong>trạng thái</strong> và <strong>thứ tự câu hỏi</strong> của
+                                    mẫu. Các thông tin khác và danh sách
+                                    câu hỏi sẽ không
+                                    thể chỉnh sửa.
+                                </div>
+                            </div>
+                        @endif
+
+                        @if(isset($mauKhaoSat->dotKhaoSat) && $mauKhaoSat->dotKhaoSat->isNotEmpty())
+                            @php
+    // Sử dụng các phương thức của Collection để lọc và đếm
+    $activeCount = $mauKhaoSat->dotKhaoSat->where('trangthai', 'active')->count();
+    $draftCount = $mauKhaoSat->dotKhaoSat->where('trangthai', 'draft')->count();
+    $closedCount = $mauKhaoSat->dotKhaoSat->where('trangthai', 'closed')->count();
+    $totalCount = $mauKhaoSat->dotKhaoSat->count();
+                            @endphp
+
                             <div class="alert alert-info">
-                                <i class="bi bi-info-circle"></i>
-                                Mẫu này đang được sử dụng trong {{ $mauKhaoSat->dotKhaoSat->count() }} đợt khảo sát
+                                <h6 class="alert-heading fw-bold"><i class="bi bi-info-circle-fill"></i> Tình trạng sử dụng</h6>
+                                <p class="mb-2">Mẫu khảo sát này đang được sử dụng trong tổng cộng
+                                    <strong>{{ $totalCount }}</strong> đợt khảo sát:
+                                </p>
+                                <ul class="list-unstyled mb-0">
+                                    @if($activeCount > 0)
+                                        <li>
+                                            <span class="badge bg-success me-1">{{ $activeCount }}</span>
+                                            đợt đang <strong>hoạt động</strong>.
+                                            <span class="text-danger small">(Không nên thay đổi câu hỏi)</span>
+                                        </li>
+                                    @endif
+                                    @if($draftCount > 0)
+                                        <li>
+                                            <span class="badge bg-warning me-1">{{ $draftCount }}</span>
+                                            đợt ở trạng thái <strong>nháp</strong>.
+                                        </li>
+                                    @endif
+                                    @if($closedCount > 0)
+                                        <li>
+                                            <span class="badge bg-secondary me-1">{{ $closedCount }}</span>
+                                            đợt đã <strong>đóng</strong>.
+                                        </li>
+                                    @endif
+                                </ul>
                             </div>
                         @endif
                     </div>
@@ -317,6 +366,8 @@
             }
 
             function showModalSuaCauHoi(cauHoiId) {
+                locked = '{{$isLocked}}';
+                if(locked) return alert('Mẫu khảo sát đang bị khóa, hiện tại bạn không thể chỉnh sửa câu hỏi này.');
                 $.get(`/admin/cau-hoi/${cauHoiId}`, function (cauHoi) {
                     $('#modalTitle').text('Sửa câu hỏi');
                     $('#formCauHoi')[0].reset();

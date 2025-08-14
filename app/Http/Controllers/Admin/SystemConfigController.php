@@ -14,7 +14,8 @@ class SystemConfigController extends Controller
 {
     public function index()
     {
-        $configs = CauHinhHeThong::orderBy('nhom_cauhinh')->get()->groupBy('nhom_cauhinh');
+        // $configs = CauHinhHeThong::orderBy('nhom_cauhinh')->get()->groupBy('nhom_cauhinh'); // Sắp xếp theo nhóm
+        $configs = CauHinhHeThong::orderBy('nhom_cauhinh')->orderBy('mota')->get()->groupBy('nhom_cauhinh'); // Sắp xếp theo mô tả
         $emailTemplates = TemplateEmail::all();
 
         return view('admin.config.index', compact('configs', 'emailTemplates'));
@@ -22,21 +23,31 @@ class SystemConfigController extends Controller
 
     public function updateConfigs(Request $request)
     {
-        if (!$request->has('configs')) {
-            return back()->with('info', 'Không có gì để cập nhật.');
-        }
+        if ($request->has('configs')) {
+            foreach ($request->configs as $id => $values) {
+                $config = CauHinhHeThong::find($id);
+                if ($config) {
+                    // Không cho phép sửa key, chỉ sửa giá trị
+                    $newValue = $values['giatri'];
 
-        foreach ($request->configs as $id => $values) {
-            $config = CauHinhHeThong::find($id);
-            if ($config) {
-                $config->update(['giatri' => $values['giatri']]);
+                    // Xử lý giá trị boolean
+                    if ($config->ma_cauhinh === 'app.debug') {
+                        $newValue = filter_var($newValue, FILTER_VALIDATE_BOOLEAN) ? 'true' : 'false';
+                    }
+
+                    // Không lưu mật khẩu rỗng
+                    if ($config->ma_cauhinh === 'mail.password' && empty($newValue)) {
+                    } else {
+                        $config->update(['giatri' => $newValue]);
+                    }
+                }
             }
         }
 
-        Cache::forget('system_configs');
+        Cache::forget('db_env_configs');
         Artisan::call('config:clear');
 
-        return back()->with('success', 'Cập nhật cấu hình thành công.');
+        return back()->with('success', 'Cập nhật cấu hình thành công. Thay đổi sẽ có hiệu lực sau vài phút.');
     }
 
     //template email

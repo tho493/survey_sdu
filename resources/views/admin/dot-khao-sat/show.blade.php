@@ -56,7 +56,15 @@
                                         <span class="badge bg-warning">Nháp</span>
                                         @break
                                     @case('closed')
-                                        <span class="badge bg-secondary">Đã đóng</span>
+                                         @php
+                                            $isClosedEarly = now()->lt($dotKhaoSat->denngay);
+                                        @endphp
+                                        
+                                        @if($isClosedEarly)
+                                            <span class="badge bg-danger">Dừng sớm</span>
+                                        @else
+                                            <span class="badge bg-secondary">Đã kết thúc</span>
+                                        @endif
                                         @break
                                 @endswitch
                             </td>

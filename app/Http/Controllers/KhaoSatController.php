@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\DotKhaoSat;
 use App\Models\PhieuKhaoSat;
 use App\Models\PhieuKhaoSatChiTiet;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
 use App\Models\CauHoiKhaoSat;
 use Illuminate\Support\Facades\DB;
@@ -24,9 +25,32 @@ class KhaoSatController extends Controller
 
     public function show(DotKhaoSat $dotKhaoSat)
     {
-        if (!$dotKhaoSat->isActive()) {
-            return redirect()->route('khao-sat.index')
-                ->with('error', 'Đợt khảo sát này hiện không hoạt động hoặc đã kết thúc.');
+
+        // Check thời gian hoạt động của đợt
+        if (!Auth::check()) { // Nếu admin đang login thì xem bình thường
+            if ($dotKhaoSat->isClosed()) { // Case đóng thủ công
+                return view('khao-sat.closed', [
+                    'dotKhaoSat' => $dotKhaoSat,
+                    'message' => 'Đợt khảo sát này đã được đóng lại sớm hơn dự kiến.',
+                    'reason' => 'closed_manually'
+                ]);
+            }
+
+            if (now()->lt($dotKhaoSat->tungay)) { // Case chưa đến ngày bắt đầu
+                return view('khao-sat.closed', [
+                    'dotKhaoSat' => $dotKhaoSat,
+                    'message' => 'Đợt khảo sát này chưa bắt đầu.',
+                    'reason' => 'not_started_yet'
+                ]);
+            }
+
+            if (now()->gt($dotKhaoSat->denngay)) { // Case hết hạn
+                return view('khao-sat.closed', [
+                    'dotKhaoSat' => $dotKhaoSat,
+                    'message' => 'Đợt khảo sát này đã kết thúc.',
+                    'reason' => 'expired'
+                ]);
+            }
         }
 
         $mauKhaoSat = $dotKhaoSat->mauKhaoSat()
@@ -40,8 +64,6 @@ class KhaoSatController extends Controller
             ])
             ->first();
 
-        // dd($mauKhaoSat->toArray());
-
         if (!$mauKhaoSat) {
             return redirect()->route('khao-sat.index')
                 ->with('error', 'Không tìm thấy mẫu khảo sát cho đợt này.');
@@ -52,6 +74,14 @@ class KhaoSatController extends Controller
 
     public function store(Request $request, DotKhaoSat $dotKhaoSat)
     {
+        if (Auth::check()) {
+            return view('khao-sat.closed', [
+                'dotKhaoSat' => $dotKhaoSat,
+                'message' => 'Quản trị viên đang ở chế độ xem trước và không thể nộp khảo sát.',
+                'reason' => 'Forbidden'
+            ]);
+        }
+
         if (!$dotKhaoSat->isActive()) {
             return response()->json([
                 'success' => false,
@@ -81,7 +111,6 @@ class KhaoSatController extends Controller
 
             // Lưu câu trả lời
             foreach ($request->input('cau_tra_loi', []) as $cauHoiId => $traLoi) {
-                // Bỏ qua nếu giá trị rỗng
                 if (is_null($traLoi) || (is_string($traLoi) && trim($traLoi) === '') || (is_array($traLoi) && empty($traLoi))) {
                     continue;
                 }
@@ -118,7 +147,6 @@ class KhaoSatController extends Controller
                         PhieuKhaoSatChiTiet::create($data);
                         break;
 
-                    // --- PHẦN SỬA LỖI ---
                     case 'rating':
                     case 'number':
                         $data['giatri_number'] = $traLoi;
@@ -138,7 +166,6 @@ class KhaoSatController extends Controller
                 }
             }
 
-            // Cập nhật trạng thái hoàn thành
             $phieuKhaoSat->update([
                 'trangthai' => 'completed',
                 'thoigian_hoanthanh' => now()

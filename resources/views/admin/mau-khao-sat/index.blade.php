@@ -149,7 +149,10 @@
             </div>
             
             <div class="mt-3">
-                {{ $mauKhaoSats->withQueryString()->links() }}
+                @if ($mauKhaoSats->hasPages())
+                    {{ $mauKhaoSats->withQueryString()->links() }}
+                @endif
+                {{-- $mauKhaoSats->withQueryString()->links() --}}
             </div>
         </div>
     </div>

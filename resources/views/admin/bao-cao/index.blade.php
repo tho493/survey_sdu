@@ -174,7 +174,10 @@
             
             {{-- Phân trang --}}
             <div class="mt-3 d-flex justify-content-end">
-                {{ $dotKhaoSats->links() }}
+                {{-- $dotKhaoSats->links() --}}
+                @if ($dotKhaoSats->hasPages())
+                    {{ $dotKhaoSats->withQueryString()->links() }}
+                @endif
             </div>
         </div>
     </div>

@@ -9,25 +9,42 @@
         <h1 class="h3 mb-4">Cấu hình hệ thống</h1>
 
         <div class="row">
-            <!-- Cột 1: Cấu hình chung (Chỉ Sửa) -->
+            <!-- Cột 1 là cấu hình chung, chỉ sửa -->
             <div class="col-lg-6">
                 <div class="card shadow mb-4">
                     <div class="card-header">
-                        <h6 class="m-0 font-weight-bold text-primary">Cấu hình chung</h6>
+                        <h6 class="m-0 font-weight-bold text-primary">Cấu hình hệ thống</h6>
                     </div>
                     <div class="card-body">
+                        <div class="alert alert-info small">
+                            <i class="bi bi-info-circle"></i>
+                            Các thay đổi ở đây sẽ ghi đè lên cấu hình trong file <strong>.env</strong> và <strong>thư mục
+                                config/</strong>.
+                        </div>
+
                         <form method="POST" action="{{ route('admin.config.update-configs') }}">
                             @csrf
                             @foreach($configs as $group => $items)
-                                <h6 class="text-uppercase text-muted small mt-3 mb-2">{{ $group }}</h6>
+                                <h6 class="text-uppercase text-muted small mt-4 mb-3">{{ $group }}</h6>
                                 @foreach($items as $config)
                                     <div class="mb-3">
                                         <label class="form-label">{{ $config->mota }}</label>
                                         <input type="hidden" name="configs[{{ $config->id }}][id]" value="{{ $config->id }}">
-                                        <input
-                                            type="{{ Str::contains($config->ma_cauhinh, ['password', 'secret']) ? 'password' : 'text' }}"
-                                            class="form-control" name="configs[{{ $config->id }}][giatri]"
-                                            value="{{ $config->giatri }}">
+
+                                        {{-- Xử lý các loại input khác nhau --}}
+                                        @if($config->ma_cauhinh === 'app.debug')
+                                            <select class="form-select" name="configs[{{ $config->id }}][giatri]">
+                                                <option value="true" {{ $config->giatri == 'true' ? 'selected' : '' }}>Bật (True)</option>
+                                                <option value="false" {{ $config->giatri == 'false' ? 'selected' : '' }}>Tắt (False)
+                                                </option>
+                                            </select>
+                                        @elseif(Str::contains($config->ma_cauhinh, 'password'))
+                                            <input type="password" class="form-control" name="configs[{{ $config->id }}][giatri]"
+                                                placeholder="Để trống để không thay đổi">
+                                        @else
+                                            <input type="text" class="form-control" name="configs[{{ $config->id }}][giatri]"
+                                                value="{{ $config->giatri }}">
+                                        @endif
                                         <small class="text-muted fst-italic">Key: `{{ $config->ma_cauhinh }}`</small>
                                     </div>
                                 @endforeach

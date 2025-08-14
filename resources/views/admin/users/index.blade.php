@@ -96,7 +96,10 @@
                     </table>
                 </div>
 
-                {{ $users->links() }}
+                @if ($users->hasPages())
+                    {{ $users->withQueryString()->links() }}
+                @endif
+                {{-- $users->links() --}}
             </div>
         </div>
     </div>
